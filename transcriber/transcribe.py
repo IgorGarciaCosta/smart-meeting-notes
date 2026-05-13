@@ -9,8 +9,45 @@ from pathlib import Path
 from faster_whisper import WhisperModel
 
 
+def transcribe_to_dict(audio_path: str, model_size: str = "medium", device: str = "cpu") -> dict:
+    """Transcribe an audio file and return structured data.
+
+    Returns:
+        dict with keys: text, segments, language, language_probability, duration_seconds
+    """
+    path = Path(audio_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Arquivo '{audio_path}' não encontrado.")
+
+    model = WhisperModel(model_size, device=device, compute_type="int8")
+    segments_gen, info = model.transcribe(
+        str(path), beam_size=5, language="pt")
+
+    t0 = time.time()
+    segments_list = []
+    full_text = []
+    for segment in segments_gen:
+        text = segment.text.strip()
+        segments_list.append({
+            "start": round(segment.start, 2),
+            "end": round(segment.end, 2),
+            "text": text,
+        })
+        full_text.append(text)
+
+    elapsed = time.time() - t0
+
+    return {
+        "text": " ".join(full_text),
+        "segments": segments_list,
+        "language": info.language,
+        "language_probability": round(info.language_probability, 2),
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
 def transcribe(audio_path: str, model_size: str = "medium", device: str = "cpu"):
-    """Transcribe an audio file and print timestamped segments."""
+    """Transcribe an audio file and print timestamped segments (CLI)."""
     path = Path(audio_path)
     if not path.exists():
         print(f"Erro: arquivo '{audio_path}' não encontrado.")
@@ -18,29 +55,21 @@ def transcribe(audio_path: str, model_size: str = "medium", device: str = "cpu")
 
     print(f"Carregando modelo '{model_size}' no device '{device}'...")
     t0 = time.time()
-    model = WhisperModel(model_size, device=device, compute_type="int8")
-    print(f"Modelo carregado em {time.time() - t0:.1f}s\n")
+    result = transcribe_to_dict(audio_path, model_size, device)
+    load_time = time.time() - t0
 
-    print(f"Transcrevendo: {path.name}")
-    print("-" * 60)
-
-    t0 = time.time()
-    segments, info = model.transcribe(str(path), beam_size=5, language="pt")
-
+    print(f"Modelo carregado + transcrito em {load_time:.1f}s\n")
     print(
-        f"Idioma detectado: {info.language} (prob: {info.language_probability:.2f})\n")
+        f"Idioma detectado: {result['language']} (prob: {result['language_probability']})\n")
 
-    full_text = []
-    for segment in segments:
-        line = f"[{segment.start:7.2f}s -> {segment.end:7.2f}s] {segment.text.strip()}"
-        print(line)
-        full_text.append(segment.text.strip())
-
-    elapsed = time.time() - t0
     print("-" * 60)
-    print(f"Transcrição completa em {elapsed:.1f}s")
+    for seg in result["segments"]:
+        print(f"[{seg['start']:7.2f}s -> {seg['end']:7.2f}s] {seg['text']}")
+
+    print("-" * 60)
+    print(f"Transcrição completa em {result['duration_seconds']:.1f}s")
     print(f"\n--- TEXTO COMPLETO ---\n")
-    print(" ".join(full_text))
+    print(result["text"])
 
 
 if __name__ == "__main__":

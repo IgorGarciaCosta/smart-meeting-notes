@@ -36,3 +36,6 @@ Thumbs.db
 # Secrets
 appsettings.Development.json
 *.local
+
+# Data (meetings JSON + uploaded audio)
+data/
