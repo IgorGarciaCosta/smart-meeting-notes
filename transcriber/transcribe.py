@@ -74,14 +74,32 @@ def transcribe(audio_path: str, model_size: str = "medium", device: str = "cpu")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python transcribe.py <arquivo_de_audio> [modelo] [device]")
+        print(
+            "Uso: python -m transcriber.transcribe <arquivo_de_audio> [modelo] [device]")
+        print(
+            "     python -m transcriber.transcribe --json <arquivo_de_audio> [modelo] [device]")
         print("  modelo: tiny | small | medium | large-v3  (default: medium)")
         print("  device: cpu | cuda                        (default: cpu)")
-        print("\nExemplo: python transcribe.py reuniao.mp3 medium cpu")
+        print("\nExemplo: python -m transcriber.transcribe reuniao.mp3 medium cpu")
         sys.exit(0)
 
-    audio = sys.argv[1]
-    model_name = sys.argv[2] if len(sys.argv) > 2 else "medium"
-    dev = sys.argv[3] if len(sys.argv) > 3 else "cpu"
-
-    transcribe(audio, model_name, dev)
+    # --json mode: output structured JSON to stdout (used by ASP.NET subprocess)
+    if sys.argv[1] == "--json":
+        import json
+        if len(sys.argv) < 3:
+            print("Erro: --json requer <arquivo_de_audio>", file=sys.stderr)
+            sys.exit(1)
+        audio = sys.argv[2]
+        model_name = sys.argv[3] if len(sys.argv) > 3 else "medium"
+        dev = sys.argv[4] if len(sys.argv) > 4 else "cpu"
+        try:
+            result = transcribe_to_dict(audio, model_name, dev)
+            print(json.dumps(result, ensure_ascii=False))
+        except Exception as e:
+            print(json.dumps({"error": str(e)}, ensure_ascii=False))
+            sys.exit(1)
+    else:
+        audio = sys.argv[1]
+        model_name = sys.argv[2] if len(sys.argv) > 2 else "medium"
+        dev = sys.argv[3] if len(sys.argv) > 3 else "cpu"
+        transcribe(audio, model_name, dev)

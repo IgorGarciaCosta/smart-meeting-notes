@@ -33,13 +33,8 @@ builder.Services.AddSingleton<IMeetingStore, JsonMeetingStore>();
 // Processing queue (in-memory channel)
 builder.Services.AddSingleton<MeetingProcessingQueue>();
 
-// Whisper HTTP client → FastAPI on localhost:8001
-builder.Services.AddHttpClient<IWhisperService, WhisperService>(client =>
-{
-    var baseUrl = builder.Configuration.GetValue<string>("Services:WhisperUrl") ?? "http://localhost:8001";
-    client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromMinutes(10); // transcription can be slow
-});
+// Whisper transcription via Python subprocess (no separate server needed)
+builder.Services.AddSingleton<IWhisperService, WhisperService>();
 
 // Gemini HTTP client → Google Generative AI API
 builder.Services.AddHttpClient<IGeminiService, GeminiService>(client =>

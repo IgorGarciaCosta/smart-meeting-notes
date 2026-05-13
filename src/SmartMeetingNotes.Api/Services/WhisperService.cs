@@ -1,45 +1,72 @@
+using System.Diagnostics;
 using System.Text.Json;
 using SmartMeetingNotes.Api.Models;
 
 namespace SmartMeetingNotes.Api.Services;
 
 /// <summary>
-/// Calls the Whisper FastAPI service (Python) to transcribe audio files.
-/// Expected endpoint: POST http://localhost:8001/transcribe
+/// Calls the Whisper Python transcriber via subprocess.
+/// Runs: python -m transcriber.transcribe --json <audioFile>
+/// No need for a separate FastAPI server.
 /// </summary>
 public class WhisperService : IWhisperService
 {
-    private readonly HttpClient _httpClient;
     private readonly ILogger<WhisperService> _logger;
+    private readonly string _pythonPath;
+    private readonly string _projectRoot;
+    private readonly string _whisperModel;
+    private readonly string _whisperDevice;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
-    public WhisperService(HttpClient httpClient, ILogger<WhisperService> logger)
+    public WhisperService(ILogger<WhisperService> logger, IConfiguration configuration)
     {
-        _httpClient = httpClient;
         _logger = logger;
+        _projectRoot = configuration.GetValue<string>("Whisper:ProjectRoot")
+            ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        _pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
+            ?? Path.Combine(_projectRoot, "venv", "Scripts", "python.exe");
+        _whisperModel = configuration.GetValue<string>("Whisper:Model") ?? "medium";
+        _whisperDevice = configuration.GetValue<string>("Whisper:Device") ?? "cpu";
     }
 
     public async Task<TranscriptionResult> TranscribeAsync(string audioFilePath)
     {
-        _logger.LogInformation("Sending audio to Whisper service: {File}", Path.GetFileName(audioFilePath));
+        var absoluteAudioPath = Path.GetFullPath(audioFilePath);
+        _logger.LogInformation("Transcribing via subprocess: {File} (model={Model}, device={Device})",
+            Path.GetFileName(absoluteAudioPath), _whisperModel, _whisperDevice);
 
-        using var form = new MultipartFormDataContent();
-        var fileBytes = await File.ReadAllBytesAsync(audioFilePath);
-        var fileContent = new ByteArrayContent(fileBytes);
-        form.Add(fileContent, "file", Path.GetFileName(audioFilePath));
+        var psi = new ProcessStartInfo
+        {
+            FileName = _pythonPath,
+            Arguments = $"-m transcriber.transcribe --json \"{absoluteAudioPath}\" {_whisperModel} {_whisperDevice}",
+            WorkingDirectory = _projectRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
 
-        var response = await _httpClient.PostAsync("/transcribe", form);
-        response.EnsureSuccessStatusCode();
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException("Failed to start Python process");
 
-        var json = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation("Whisper response received ({Length} chars)", json.Length);
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
 
-        var result = JsonSerializer.Deserialize<TranscriptionResult>(json, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize Whisper response");
+        if (process.ExitCode != 0)
+        {
+            _logger.LogError("Whisper process failed (exit {Code}): {Stderr}", process.ExitCode, stderr);
+            throw new InvalidOperationException($"Whisper transcription failed: {stderr}");
+        }
+
+        _logger.LogInformation("Whisper process finished ({Length} chars output)", stdout.Length);
+
+        var result = JsonSerializer.Deserialize<TranscriptionResult>(stdout, _jsonOptions)
+            ?? throw new InvalidOperationException("Failed to deserialize Whisper output");
 
         return result;
     }
