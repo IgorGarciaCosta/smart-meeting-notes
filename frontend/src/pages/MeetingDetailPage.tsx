@@ -2,6 +2,36 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getMeeting } from "../api/meetings.ts";
 import type { Meeting } from "../api/types.ts";
+import { MeetingStatus, ChunkStatus } from "../api/types.ts";
+
+function statusBadge(status: MeetingStatus) {
+  const map: Record<string, { cls: string; label: string }> = {
+    [MeetingStatus.Uploaded]: { cls: "badge--neutral", label: "Uploaded" },
+    [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Aguardando" },
+    [MeetingStatus.Transcribing]: { cls: "badge--warning", label: "Transcrevendo" },
+    [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizando" },
+    [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analisando" },
+    [MeetingStatus.Completed]: { cls: "badge--success", label: "Concluída" },
+    [MeetingStatus.Failed]: { cls: "badge--danger", label: "Falhou" },
+  };
+  const info = map[status] || { cls: "badge--neutral", label: status };
+  return (
+    <span className={`badge ${info.cls}`}>
+      <span className="badge-dot" />
+      {info.label}
+    </span>
+  );
+}
+
+function chunkBadge(status: ChunkStatus) {
+  const map: Record<string, string> = {
+    [ChunkStatus.Uploaded]: "badge--neutral",
+    [ChunkStatus.Transcribing]: "badge--warning",
+    [ChunkStatus.Transcribed]: "badge--success",
+    [ChunkStatus.Failed]: "badge--danger",
+  };
+  return <span className={`badge ${map[status] || "badge--neutral"}`}><span className="badge-dot" />{status}</span>;
+}
 
 export default function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,84 +47,81 @@ export default function MeetingDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <p style={{ padding: 24 }}>Carregando...</p>;
-  if (error) return <p style={{ padding: 24, color: "red" }}>{error}</p>;
-  if (!meeting) return <p style={{ padding: 24 }}>Reunião não encontrada.</p>;
+  if (loading) return <div className="loading">Carregando...</div>;
+  if (error) return <div className="page"><div className="alert alert--error"><span>✕</span><span>{error}</span></div></div>;
+  if (!meeting) return <div className="page"><div className="empty-state"><p>Reunião não encontrada.</p></div></div>;
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", padding: 24 }}>
-      <Link to="/meetings">← Voltar</Link>
+    <div className="page">
+      <Link to="/meetings" className="back-link">
+        ← Voltar para reuniões
+      </Link>
 
-      <h1>{meeting.title}</h1>
-      <p>
-        <strong>Status:</strong> {meeting.status} &nbsp;|&nbsp;
-        <strong>Data:</strong>{" "}
-        {new Date(meeting.uploadedAt).toLocaleString("pt-BR")}
-      </p>
+      <div className="page-header">
+        <h1>{meeting.title}</h1>
+      </div>
+
+      <div className="detail-meta">
+        {statusBadge(meeting.status)}
+        <span className="detail-meta-item">
+          {new Date(meeting.uploadedAt).toLocaleString("pt-BR")}
+        </span>
+        {meeting.chunks.length > 0 && (
+          <span className="detail-meta-item">
+            {meeting.chunks.length} chunk(s)
+          </span>
+        )}
+      </div>
 
       {meeting.errorMessage && (
-        <div
-          style={{
-            padding: 12,
-            background: "#f8d7da",
-            borderRadius: 6,
-            color: "#721c24",
-            marginBottom: 16,
-          }}
-        >
-          <strong>Erro:</strong> {meeting.errorMessage}
+        <div className="alert alert--error">
+          <span>✕</span>
+          <span><strong>Erro:</strong> {meeting.errorMessage}</span>
         </div>
       )}
 
       {meeting.chunks.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h2>Chunks ({meeting.chunks.length})</h2>
-          <ul>
+        <div className="detail-section">
+          <h2>Chunks</h2>
+          <div className="chunk-list">
             {meeting.chunks.map((c) => (
-              <li key={c.chunkIndex}>
-                Chunk {c.chunkIndex} — <em>{c.status}</em>
+              <div key={c.chunkIndex} className="chunk-item">
+                <span className="chunk-index">#{c.chunkIndex}</span>
+                {chunkBadge(c.status)}
                 {c.errorMessage && (
-                  <span style={{ color: "red" }}> ({c.errorMessage})</span>
+                  <span style={{ color: "var(--danger)", fontSize: 12, marginLeft: "auto" }}>
+                    {c.errorMessage}
+                  </span>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
       {meeting.transcript && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="detail-section">
           <h2>Transcrição</h2>
-          <p style={{ fontSize: 12, color: "#666" }}>
-            Idioma: {meeting.transcript.language}
+          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
+            Idioma detectado: {meeting.transcript.language}
           </p>
-          <div
-            style={{
-              background: "#f8f9fa",
-              padding: 16,
-              borderRadius: 8,
-              maxHeight: 400,
-              overflow: "auto",
-              whiteSpace: "pre-wrap",
-              lineHeight: 1.6,
-            }}
-          >
+          <div className="transcript-box">
             {meeting.transcript.text}
           </div>
         </div>
       )}
 
       {meeting.analysis && (
-        <div>
+        <div className="detail-section">
           <h2>Análise</h2>
 
           <h3>Resumo</h3>
-          <p>{meeting.analysis.summary}</p>
+          <p style={{ color: "var(--text-primary)", lineHeight: 1.7 }}>{meeting.analysis.summary}</p>
 
           {meeting.analysis.actionItems.length > 0 && (
             <>
               <h3>Ações</h3>
-              <ul>
+              <ul className="analysis-list">
                 {meeting.analysis.actionItems.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
@@ -105,7 +132,7 @@ export default function MeetingDetailPage() {
           {meeting.analysis.decisions.length > 0 && (
             <>
               <h3>Decisões</h3>
-              <ul>
+              <ul className="analysis-list">
                 {meeting.analysis.decisions.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
@@ -116,7 +143,7 @@ export default function MeetingDetailPage() {
           {meeting.analysis.pendingQuestions.length > 0 && (
             <>
               <h3>Questões Pendentes</h3>
-              <ul>
+              <ul className="analysis-list">
                 {meeting.analysis.pendingQuestions.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}

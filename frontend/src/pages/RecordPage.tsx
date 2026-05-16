@@ -20,14 +20,12 @@ export default function RecordPage() {
 
   const recorder = useAudioRecorder({ chunkDuration });
 
-  // Set default device when devices load
   useEffect(() => {
     if (recorder.devices.length > 0 && !selectedDevice) {
       setSelectedDevice(recorder.devices[0].deviceId);
     }
   }, [recorder.devices, selectedDevice]);
 
-  // Chunk upload handler
   const handleChunk = useCallback(
     async (blob: Blob, index: number) => {
       if (!meetingId) return;
@@ -41,7 +39,6 @@ export default function RecordPage() {
     [meetingId],
   );
 
-  // Wire chunk callback
   useEffect(() => {
     recorder.onChunk.current = handleChunk;
   }, [handleChunk, recorder.onChunk]);
@@ -58,7 +55,7 @@ export default function RecordPage() {
       setMeetingId(res.meetingId);
       setChunksUploaded(0);
       setElapsed(0);
-      setStatus("Gravando...");
+      setStatus("");
 
       recorder.start(selectedDevice);
 
@@ -81,13 +78,10 @@ export default function RecordPage() {
     if (!meetingId) return;
 
     setFinalizing(true);
-    setStatus(
-      "Parando gravação... Aguardando transcrição dos chunks para finalizar.",
-    );
+    setStatus("Aguardando transcrição dos chunks para finalizar...");
 
-    // Poll until all chunks are transcribed, then finalize
     const pollAndFinalize = async () => {
-      const maxAttempts = 60; // up to 5 minutes
+      const maxAttempts = 60;
       for (let i = 0; i < maxAttempts; i++) {
         await new Promise((r) => setTimeout(r, 5000));
         try {
@@ -98,18 +92,15 @@ export default function RecordPage() {
         } catch (e) {
           const msg = String(e);
           if (msg.includes("Not all chunks are transcribed")) {
-            setStatus(`Aguardando transcrição... (tentativa ${i + 1})`);
+            setStatus(`Aguardando transcrição... (${i + 1}/${maxAttempts})`);
             continue;
           }
-          // If meeting is no longer in AwaitingChunks, it may have already been finalized
           setStatus(`Erro ao finalizar: ${msg}`);
           setFinalizing(false);
           return;
         }
       }
-      setStatus(
-        "Timeout aguardando transcrição. Verifique o status da reunião manualmente.",
-      );
+      setStatus("Timeout — verifique o status da reunião manualmente.");
       setFinalizing(false);
     };
 
@@ -117,137 +108,131 @@ export default function RecordPage() {
   };
 
   const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
+    if (h > 0) {
+      return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: 24 }}>
-      <h1>🎙️ Gravar Reunião</h1>
+    <div className="page">
+      <div className="page-header">
+        <h1>Nova Gravação</h1>
+        <p>Configure o dispositivo e inicie a captura de áudio da reunião.</p>
+      </div>
 
       {!recorder.permissionGranted && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: 12,
-            background: "#fff3cd",
-            borderRadius: 6,
-          }}
-        >
-          <p>Permissão de microfone necessária para listar dispositivos.</p>
-          <button onClick={recorder.requestPermission}>
-            Permitir Microfone
-          </button>
+        <div className="alert alert--warning">
+          <span>⚠️</span>
+          <div>
+            <strong>Permissão necessária</strong>
+            <p style={{ marginTop: 4 }}>Autorize o acesso ao microfone para listar os dispositivos disponíveis.</p>
+            <button className="btn btn--primary" style={{ marginTop: 12 }} onClick={recorder.requestPermission}>
+              Autorizar Microfone
+            </button>
+          </div>
         </div>
       )}
 
       {recorder.error && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: 12,
-            background: "#f8d7da",
-            borderRadius: 6,
-            color: "#721c24",
-          }}
-        >
-          {recorder.error}
+        <div className="alert alert--error">
+          <span>✕</span>
+          <span>{recorder.error}</span>
         </div>
       )}
 
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>
-          Dispositivo de Áudio
-        </label>
-        <select
-          value={selectedDevice}
-          onChange={(e) => setSelectedDevice(e.target.value)}
-          disabled={recorder.isRecording}
-          style={{ width: "100%", padding: 8 }}
-        >
-          {recorder.devices.length === 0 && (
-            <option value="">Nenhum dispositivo encontrado</option>
-          )}
-          {recorder.devices.map((d) => (
-            <option key={d.deviceId} value={d.deviceId}>
-              {d.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Configurações</span>
+        </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>
-          Título da Reunião
-        </label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Untitled Meeting"
-          disabled={recorder.isRecording}
-          style={{ width: "100%", padding: 8 }}
-        />
-      </div>
+        <div className="form-group">
+          <label className="form-label">Dispositivo de Áudio</label>
+          <select
+            className="form-select"
+            value={selectedDevice}
+            onChange={(e) => setSelectedDevice(e.target.value)}
+            disabled={recorder.isRecording}
+          >
+            {recorder.devices.length === 0 && (
+              <option value="">Nenhum dispositivo encontrado</option>
+            )}
+            {recorder.devices.map((d) => (
+              <option key={d.deviceId} value={d.deviceId}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>
-          Duração do Chunk (segundos)
-        </label>
-        <input
-          type="number"
-          value={chunkDuration}
-          onChange={(e) => setChunkDuration(Number(e.target.value) || 30)}
-          min={10}
-          max={120}
-          disabled={recorder.isRecording}
-          style={{ width: 100, padding: 8 }}
-        />
-      </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Título da Reunião</label>
+            <input
+              className="form-input"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Daily Standup, Sprint Review..."
+              disabled={recorder.isRecording}
+            />
+          </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <button
-          onClick={recorder.isRecording ? handleStop : handleStart}
-          disabled={finalizing}
-          style={{
-            padding: "12px 32px",
-            fontSize: 18,
-            fontWeight: 700,
-            borderRadius: 8,
-            border: "none",
-            cursor: finalizing ? "not-allowed" : "pointer",
-            background: recorder.isRecording ? "#dc3545" : "#28a745",
-            color: "#fff",
-          }}
-        >
-          {recorder.isRecording ? "⏹ Parar Gravação" : "🔴 Iniciar Gravação"}
-        </button>
+          <div className="form-group">
+            <label className="form-label">Chunk (s)</label>
+            <input
+              className="form-input"
+              type="number"
+              value={chunkDuration}
+              onChange={(e) => setChunkDuration(Number(e.target.value) || 30)}
+              min={10}
+              max={120}
+              disabled={recorder.isRecording}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}>
+          <button
+            className={`btn ${recorder.isRecording ? "btn--stop" : "btn--record"}`}
+            onClick={recorder.isRecording ? handleStop : handleStart}
+            disabled={finalizing}
+          >
+            {recorder.isRecording ? "⏹  Parar Gravação" : "●  Iniciar Gravação"}
+          </button>
+        </div>
       </div>
 
       {(recorder.isRecording || meetingId) && (
-        <div style={{ padding: 16, background: "#f0f0f0", borderRadius: 8 }}>
+        <div className="recording-panel">
           {recorder.isRecording && (
-            <p style={{ fontSize: 24, fontWeight: 700, color: "#dc3545" }}>
-              🔴 Gravando — {formatTime(elapsed)}
-            </p>
+            <div className="recording-timer">
+              <span className="recording-dot" />
+              {formatTime(elapsed)}
+            </div>
           )}
-          <p>
-            Chunks enviados: <strong>{chunksUploaded}</strong>
-          </p>
+
+          <div className="recording-stats">
+            <div className="recording-stat">
+              <div className="recording-stat-value">{chunksUploaded}</div>
+              <div className="recording-stat-label">Chunks enviados</div>
+            </div>
+            <div className="recording-stat">
+              <div className="recording-stat-value">{chunkDuration}s</div>
+              <div className="recording-stat-label">Por chunk</div>
+            </div>
+          </div>
+
           {meetingId && (
-            <p style={{ fontSize: 12, color: "#666" }}>
-              Meeting ID: <code>{meetingId}</code>
-            </p>
+            <div className="recording-id">ID: {meetingId}</div>
           )}
         </div>
       )}
 
-      {status && (
-        <p style={{ marginTop: 16, fontStyle: "italic", color: "#555" }}>
-          {status}
-        </p>
-      )}
+      {status && <p className="status-text">{status}</p>}
     </div>
   );
 }

@@ -4,15 +4,24 @@ import { getAllMeetings } from "../api/meetings.ts";
 import type { Meeting } from "../api/types.ts";
 import { MeetingStatus } from "../api/types.ts";
 
-const statusColors: Record<string, string> = {
-  [MeetingStatus.Uploaded]: "#6c757d",
-  [MeetingStatus.AwaitingChunks]: "#17a2b8",
-  [MeetingStatus.Transcribing]: "#ffc107",
-  [MeetingStatus.Finalizing]: "#ffc107",
-  [MeetingStatus.Analyzing]: "#fd7e14",
-  [MeetingStatus.Completed]: "#28a745",
-  [MeetingStatus.Failed]: "#dc3545",
-};
+function statusBadge(status: MeetingStatus) {
+  const map: Record<string, { cls: string; label: string }> = {
+    [MeetingStatus.Uploaded]: { cls: "badge--neutral", label: "Uploaded" },
+    [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Aguardando" },
+    [MeetingStatus.Transcribing]: { cls: "badge--warning", label: "Transcrevendo" },
+    [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizando" },
+    [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analisando" },
+    [MeetingStatus.Completed]: { cls: "badge--success", label: "Concluída" },
+    [MeetingStatus.Failed]: { cls: "badge--danger", label: "Falhou" },
+  };
+  const info = map[status] || { cls: "badge--neutral", label: status };
+  return (
+    <span className={`badge ${info.cls}`}>
+      <span className="badge-dot" />
+      {info.label}
+    </span>
+  );
+}
 
 export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -26,52 +35,50 @@ export default function MeetingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p style={{ padding: 24 }}>Carregando...</p>;
-  if (error) return <p style={{ padding: 24, color: "red" }}>{error}</p>;
+  if (loading) return <div className="loading">Carregando reuniões...</div>;
+  if (error) return <div className="page"><div className="alert alert--error"><span>✕</span><span>{error}</span></div></div>;
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", padding: 24 }}>
-      <h1>📋 Reuniões</h1>
+    <div className="page">
+      <div className="page-header">
+        <h1>Reuniões</h1>
+        <p>{meetings.length} reunião(ões) registrada(s)</p>
+      </div>
 
       {meetings.length === 0 ? (
-        <p>Nenhuma reunião encontrada.</p>
+        <div className="empty-state">
+          <p style={{ fontSize: 32 }}>📭</p>
+          <p>Nenhuma reunião gravada ainda.</p>
+        </div>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #ccc", textAlign: "left" }}>
-              <th style={{ padding: 8 }}>Título</th>
-              <th style={{ padding: 8 }}>Status</th>
-              <th style={{ padding: 8 }}>Data</th>
-            </tr>
-          </thead>
-          <tbody>
-            {meetings.map((m) => (
-              <tr key={m.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: 8 }}>
-                  <Link to={`/meetings/${m.id}`}>{m.title}</Link>
-                </td>
-                <td style={{ padding: 8 }}>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "2px 8px",
-                      borderRadius: 4,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: "#fff",
-                      background: statusColors[m.status] || "#999",
-                    }}
-                  >
-                    {m.status}
-                  </span>
-                </td>
-                <td style={{ padding: 8, fontSize: 13, color: "#666" }}>
-                  {new Date(m.uploadedAt).toLocaleString("pt-BR")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div className="table-wrapper">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Título</th>
+                  <th>Status</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {meetings.map((m) => (
+                  <tr key={m.id}>
+                    <td>
+                      <Link to={`/meetings/${m.id}`} className="table-link">
+                        {m.title}
+                      </Link>
+                    </td>
+                    <td>{statusBadge(m.status)}</td>
+                    <td className="table-date">
+                      {new Date(m.uploadedAt).toLocaleString("pt-BR")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );
