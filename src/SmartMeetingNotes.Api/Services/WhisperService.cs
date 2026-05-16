@@ -59,8 +59,9 @@ public class WhisperService : IWhisperService
 
         if (process.ExitCode != 0)
         {
-            _logger.LogError("Whisper process failed (exit {Code}): {Stderr}", process.ExitCode, stderr);
-            throw new InvalidOperationException($"Whisper transcription failed: {stderr}");
+            var errorDetail = !string.IsNullOrWhiteSpace(stderr) ? stderr : stdout;
+            _logger.LogError("Whisper process failed (exit {Code}): {Detail}", process.ExitCode, errorDetail);
+            throw new InvalidOperationException($"Whisper transcription failed: {errorDetail}");
         }
 
         _logger.LogInformation("Whisper process finished ({Length} chars output)", stdout.Length);

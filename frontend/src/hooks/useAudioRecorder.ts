@@ -29,10 +29,13 @@ export function useAudioRecorder(opts: UseAudioRecorderOptions = {}): UseAudioRe
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunkIndexRef = useRef(0);
   const onChunk = useRef<((blob: Blob, index: number) => void) | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const stoppedByUser = useRef(false);
+  const deviceIdRef = useRef<string>("");
 
   const enumerateDevices = useCallback(async () => {
     try {
@@ -63,14 +66,51 @@ export function useAudioRecorder(opts: UseAudioRecorderOptions = {}): UseAudioRe
   }, [enumerateDevices]);
 
   useEffect(() => {
-    // Try to enumerate on mount (labels may be empty without permission)
     enumerateDevices();
   }, [enumerateDevices]);
+
+  // Start a single MediaRecorder session that produces ONE complete file when stopped
+  const startRecorder = useCallback((stream: MediaStream) => {
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : "audio/webm";
+
+    const recorder = new MediaRecorder(stream, { mimeType });
+    const chunks: Blob[] = [];
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      // Combine all fragments into one complete valid webm file
+      if (chunks.length > 0 && onChunk.current) {
+        const completeBlob = new Blob(chunks, { type: mimeType });
+        onChunk.current(completeBlob, chunkIndexRef.current);
+        chunkIndexRef.current++;
+      }
+
+      // If not stopped by user, start a new recorder for next chunk
+      if (!stoppedByUser.current && streamRef.current?.active) {
+        startRecorder(streamRef.current);
+      }
+    };
+
+    recorder.onerror = () => {
+      setError("Erro durante gravação");
+      setIsRecording(false);
+    };
+
+    recorderRef.current = recorder;
+    recorder.start(); // No timeslice! Record continuously until stopped
+  }, []);
 
   const start = useCallback(
     (deviceId: string) => {
       setError(null);
       chunkIndexRef.current = 0;
+      stoppedByUser.current = false;
+      deviceIdRef.current = deviceId;
 
       navigator.mediaDevices
         .getUserMedia({
@@ -78,46 +118,42 @@ export function useAudioRecorder(opts: UseAudioRecorderOptions = {}): UseAudioRe
         })
         .then((stream) => {
           streamRef.current = stream;
-
-          // Prefer webm (widely supported) — API accepts .webm
-          const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-            ? "audio/webm;codecs=opus"
-            : "audio/webm";
-
-          const recorder = new MediaRecorder(stream, { mimeType });
-          mediaRecorderRef.current = recorder;
-
-          recorder.ondataavailable = (e) => {
-            if (e.data.size > 0 && onChunk.current) {
-              onChunk.current(e.data, chunkIndexRef.current);
-              chunkIndexRef.current++;
-            }
-          };
-
-          recorder.onerror = () => {
-            setError("Erro durante gravação");
-            setIsRecording(false);
-          };
-
-          recorder.start(chunkDuration * 1000); // timeslice in ms
+          startRecorder(stream);
           setIsRecording(true);
+
+          // Cycle: stop recorder every chunkDuration to produce a complete file,
+          // then onstop handler auto-starts a new one
+          timerRef.current = setInterval(() => {
+            if (recorderRef.current && recorderRef.current.state === "recording") {
+              recorderRef.current.stop();
+            }
+          }, chunkDuration * 1000);
         })
         .catch((e) => {
           setError(`Não foi possível iniciar gravação: ${e}`);
         });
     },
-    [chunkDuration]
+    [chunkDuration, startRecorder]
   );
 
   const stop = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+    stoppedByUser.current = true;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.stop(); // This triggers onstop → emits final chunk
+    }
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    mediaRecorderRef.current = null;
+
+    recorderRef.current = null;
     setIsRecording(false);
   }, []);
 

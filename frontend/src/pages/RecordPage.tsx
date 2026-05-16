@@ -95,6 +95,16 @@ export default function RecordPage() {
             setStatus(`Aguardando transcrição... (${i + 1}/${maxAttempts})`);
             continue;
           }
+          if (
+            msg.includes("cannot finalize") ||
+            msg.includes("Failed") ||
+            msg.includes("cannot upload")
+          ) {
+            // Meeting is in a bad state, stop retrying
+            setStatus(`Erro: ${msg}`);
+            setFinalizing(false);
+            return;
+          }
           setStatus(`Erro ao finalizar: ${msg}`);
           setFinalizing(false);
           return;
