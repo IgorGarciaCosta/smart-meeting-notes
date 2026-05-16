@@ -8,7 +8,10 @@ function statusBadge(status: MeetingStatus) {
   const map: Record<string, { cls: string; label: string }> = {
     [MeetingStatus.Uploaded]: { cls: "badge--neutral", label: "Uploaded" },
     [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Aguardando" },
-    [MeetingStatus.Transcribing]: { cls: "badge--warning", label: "Transcrevendo" },
+    [MeetingStatus.Transcribing]: {
+      cls: "badge--warning",
+      label: "Transcrevendo",
+    },
     [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizando" },
     [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analisando" },
     [MeetingStatus.Completed]: { cls: "badge--success", label: "Concluída" },
@@ -30,7 +33,12 @@ function chunkBadge(status: ChunkStatus) {
     [ChunkStatus.Transcribed]: "badge--success",
     [ChunkStatus.Failed]: "badge--danger",
   };
-  return <span className={`badge ${map[status] || "badge--neutral"}`}><span className="badge-dot" />{status}</span>;
+  return (
+    <span className={`badge ${map[status] || "badge--neutral"}`}>
+      <span className="badge-dot" />
+      {status}
+    </span>
+  );
 }
 
 export default function MeetingDetailPage() {
@@ -48,8 +56,23 @@ export default function MeetingDetailPage() {
   }, [id]);
 
   if (loading) return <div className="loading">Carregando...</div>;
-  if (error) return <div className="page"><div className="alert alert--error"><span>✕</span><span>{error}</span></div></div>;
-  if (!meeting) return <div className="page"><div className="empty-state"><p>Reunião não encontrada.</p></div></div>;
+  if (error)
+    return (
+      <div className="page">
+        <div className="alert alert--error">
+          <span>✕</span>
+          <span>{error}</span>
+        </div>
+      </div>
+    );
+  if (!meeting)
+    return (
+      <div className="page">
+        <div className="empty-state">
+          <p>Reunião não encontrada.</p>
+        </div>
+      </div>
+    );
 
   return (
     <div className="page">
@@ -76,7 +99,9 @@ export default function MeetingDetailPage() {
       {meeting.errorMessage && (
         <div className="alert alert--error">
           <span>✕</span>
-          <span><strong>Erro:</strong> {meeting.errorMessage}</span>
+          <span>
+            <strong>Erro:</strong> {meeting.errorMessage}
+          </span>
         </div>
       )}
 
@@ -89,7 +114,13 @@ export default function MeetingDetailPage() {
                 <span className="chunk-index">#{c.chunkIndex}</span>
                 {chunkBadge(c.status)}
                 {c.errorMessage && (
-                  <span style={{ color: "var(--danger)", fontSize: 12, marginLeft: "auto" }}>
+                  <span
+                    style={{
+                      color: "var(--danger)",
+                      fontSize: 12,
+                      marginLeft: "auto",
+                    }}
+                  >
                     {c.errorMessage}
                   </span>
                 )}
@@ -102,12 +133,16 @@ export default function MeetingDetailPage() {
       {meeting.transcript && (
         <div className="detail-section">
           <h2>Transcrição</h2>
-          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--text-muted)",
+              marginBottom: 12,
+            }}
+          >
             Idioma detectado: {meeting.transcript.language}
           </p>
-          <div className="transcript-box">
-            {meeting.transcript.text}
-          </div>
+          <div className="transcript-box">{meeting.transcript.text}</div>
         </div>
       )}
 
@@ -116,7 +151,9 @@ export default function MeetingDetailPage() {
           <h2>Análise</h2>
 
           <h3>Resumo</h3>
-          <p style={{ color: "var(--text-primary)", lineHeight: 1.7 }}>{meeting.analysis.summary}</p>
+          <p style={{ color: "var(--text-primary)", lineHeight: 1.7 }}>
+            {meeting.analysis.summary}
+          </p>
 
           {meeting.analysis.actionItems.length > 0 && (
             <>

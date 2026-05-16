@@ -8,7 +8,10 @@ function statusBadge(status: MeetingStatus) {
   const map: Record<string, { cls: string; label: string }> = {
     [MeetingStatus.Uploaded]: { cls: "badge--neutral", label: "Uploaded" },
     [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Aguardando" },
-    [MeetingStatus.Transcribing]: { cls: "badge--warning", label: "Transcrevendo" },
+    [MeetingStatus.Transcribing]: {
+      cls: "badge--warning",
+      label: "Transcrevendo",
+    },
     [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizando" },
     [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analisando" },
     [MeetingStatus.Completed]: { cls: "badge--success", label: "Concluída" },
@@ -36,7 +39,15 @@ export default function MeetingsPage() {
   }, []);
 
   if (loading) return <div className="loading">Carregando reuniões...</div>;
-  if (error) return <div className="page"><div className="alert alert--error"><span>✕</span><span>{error}</span></div></div>;
+  if (error)
+    return (
+      <div className="page">
+        <div className="alert alert--error">
+          <span>✕</span>
+          <span>{error}</span>
+        </div>
+      </div>
+    );
 
   return (
     <div className="page">

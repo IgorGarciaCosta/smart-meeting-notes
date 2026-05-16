@@ -129,8 +129,15 @@ export default function RecordPage() {
           <span>⚠️</span>
           <div>
             <strong>Permissão necessária</strong>
-            <p style={{ marginTop: 4 }}>Autorize o acesso ao microfone para listar os dispositivos disponíveis.</p>
-            <button className="btn btn--primary" style={{ marginTop: 12 }} onClick={recorder.requestPermission}>
+            <p style={{ marginTop: 4 }}>
+              Autorize o acesso ao microfone para listar os dispositivos
+              disponíveis.
+            </p>
+            <button
+              className="btn btn--primary"
+              style={{ marginTop: 12 }}
+              onClick={recorder.requestPermission}
+            >
               Autorizar Microfone
             </button>
           </div>
@@ -195,7 +202,9 @@ export default function RecordPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}>
+        <div
+          style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}
+        >
           <button
             className={`btn ${recorder.isRecording ? "btn--stop" : "btn--record"}`}
             onClick={recorder.isRecording ? handleStop : handleStart}
@@ -226,9 +235,7 @@ export default function RecordPage() {
             </div>
           </div>
 
-          {meetingId && (
-            <div className="recording-id">ID: {meetingId}</div>
-          )}
+          {meetingId && <div className="recording-id">ID: {meetingId}</div>}
         </div>
       )}
 
