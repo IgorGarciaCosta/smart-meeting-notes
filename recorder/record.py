@@ -110,7 +110,8 @@ def main():
         title = args.title
     else:
         try:
-            title = input("\nTítulo da reunião (Enter = 'Untitled Meeting'): ").strip()
+            title = input(
+                "\nTítulo da reunião (Enter = 'Untitled Meeting'): ").strip()
             if not title:
                 title = "Untitled Meeting"
         except (KeyboardInterrupt, EOFError):
@@ -137,7 +138,8 @@ def main():
     capture = AudioCapture(
         device_index=device["index"],
         device_samplerate=device["samplerate"],
-        channels=min(device["channels"], 2),  # Max stereo, will be mixed to mono
+        # Max stereo, will be mixed to mono
+        channels=min(device["channels"], 2),
         chunk_duration=args.chunk_duration,
         is_loopback=is_loopback,
     )
@@ -184,7 +186,8 @@ def main():
         print(f"  Chunks enviados com sucesso: {len(uploaded_chunks)}")
         sys.exit(1)
 
-    print(f"\n✓ Gravação finalizada. {len(uploaded_chunks)} chunk(s) enviado(s).")
+    print(
+        f"\n✓ Gravação finalizada. {len(uploaded_chunks)} chunk(s) enviado(s).")
 
     if len(uploaded_chunks) == 0:
         print("  Nenhum áudio foi capturado.")
@@ -211,7 +214,8 @@ def main():
                 print(f"  POST {args.api}/api/meetings/{meeting_id}/finalize")
         except ApiError as e:
             print(f"⚠ Erro: {e}")
-            print(f"  Finalize manualmente: POST {args.api}/api/meetings/{meeting_id}/finalize")
+            print(
+                f"  Finalize manualmente: POST {args.api}/api/meetings/{meeting_id}/finalize")
 
     # --- Cleanup temp files ---
     try:

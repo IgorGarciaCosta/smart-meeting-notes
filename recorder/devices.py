@@ -73,7 +73,8 @@ def print_devices(devices: list[dict]) -> None:
 
     for i, dev in enumerate(devices):
         print(f"  [{i}] {dev['name']}")
-        print(f"      Canais: {dev['channels']} | Taxa: {dev['samplerate']} Hz | API: {dev['hostapi']}")
+        print(
+            f"      Canais: {dev['channels']} | Taxa: {dev['samplerate']} Hz | API: {dev['hostapi']}")
 
 
 def select_device(devices: list[dict] | None = None) -> dict:
@@ -98,7 +99,8 @@ def select_device(devices: list[dict] | None = None) -> dict:
 
     while True:
         try:
-            choice = input(f"Selecione o dispositivo [0-{len(devices)-1}] (Enter = 0): ").strip()
+            choice = input(
+                f"Selecione o dispositivo [0-{len(devices)-1}] (Enter = 0): ").strip()
             if choice == "":
                 choice = 0
             else:

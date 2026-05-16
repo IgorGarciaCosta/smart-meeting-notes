@@ -110,7 +110,8 @@ class AudioCapture:
 
         # Resample to 16kHz if needed
         if self.device_samplerate != TARGET_SAMPLERATE:
-            chunk_data = self._resample(chunk_data, self.device_samplerate, TARGET_SAMPLERATE)
+            chunk_data = self._resample(
+                chunk_data, self.device_samplerate, TARGET_SAMPLERATE)
 
         # Convert float32 [-1, 1] to int16
         chunk_data = np.clip(chunk_data, -1.0, 1.0)

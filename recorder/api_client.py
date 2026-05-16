@@ -53,14 +53,16 @@ class MeetingApiClient:
                     delay = RETRY_DELAY * (2 ** attempt)
                     time.sleep(delay)
 
-        raise ApiError(f"Request failed after {MAX_RETRIES} retries: {last_exc}")
+        raise ApiError(
+            f"Request failed after {MAX_RETRIES} retries: {last_exc}")
 
     def create_meeting(self, title: str = "Untitled Meeting") -> str:
         """Create a new meeting for chunked upload.
 
         Returns the meeting ID (GUID string).
         """
-        response = self._request("POST", "/api/meetings", json={"title": title})
+        response = self._request(
+            "POST", "/api/meetings", json={"title": title})
 
         if response.status_code not in (200, 201):
             raise ApiError(
@@ -109,7 +111,8 @@ class MeetingApiClient:
 
         Returns the response dict.
         """
-        response = self._request("POST", f"/api/meetings/{meeting_id}/finalize")
+        response = self._request(
+            "POST", f"/api/meetings/{meeting_id}/finalize")
 
         if response.status_code not in (200, 202):
             raise ApiError(
@@ -160,8 +163,10 @@ class MeetingApiClient:
                 time.sleep(poll_interval)
                 continue
 
-            all_done = all(c.get("status") == 2 for c in chunks)  # Transcribed = 2
-            any_failed = any(c.get("status") == 3 for c in chunks)  # Failed = 3
+            # Transcribed = 2
+            all_done = all(c.get("status") == 2 for c in chunks)
+            any_failed = any(c.get("status") ==
+                             3 for c in chunks)  # Failed = 3
 
             if all_done:
                 return True
