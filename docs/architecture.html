@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Meeting Notes — Arquitetura</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        h1 { color: #58a6ff; margin-bottom: 5px; }
+        h2 { color: #8b949e; font-weight: 400; margin-top: 0; }
+        .mermaid { margin: 30px 0; max-width: 95vw; }
+        .legend {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin-top: 20px;
+            max-width: 800px;
+            width: 100%;
+        }
+        .legend h3 { color: #58a6ff; margin-top: 0; }
+        .legend table { width: 100%; border-collapse: collapse; }
+        .legend td { padding: 6px 10px; border-bottom: 1px solid #21262d; }
+        .legend td:first-child { color: #f0883e; font-family: monospace; white-space: nowrap; }
+    </style>
+</head>
+<body>
+    <h1>Smart Meeting Notes</h1>
+    <h2>Arquitetura do MVP — ASP.NET Core + Whisper + Gemini</h2>
+
+    <div class="mermaid">
+    flowchart TB
+        subgraph CLIENT["👤 Cliente (Swagger UI / curl)"]
+            A1["POST /api/meetings/upload<br/>(áudio + título)"]
+            A2["GET /api/meetings/{id}<br/>(consulta status)"]
+            A3["GET /api/meetings<br/>(lista todas)"]
+        end
+
+        subgraph ASPNET["🧠 ASP.NET Core Web API (porta 5117)"]
+            direction TB
+            subgraph CTRL["MeetingsController"]
+                C1["Upload → salva áudio<br/>em data/audio/"]
+                C2["Retorna 202 Accepted<br/>+ meetingId"]
+                C3["Consulta meeting<br/>por ID"]
+                C4["Lista meetings"]
+            end
+
+            subgraph BG["MeetingProcessingService (Background)"]
+                direction TB
+                Q["MeetingProcessingQueue<br/>(Channel&lt;Guid&gt;)"]
+                P1["1️⃣ Status → Transcribing<br/>Chama WhisperService"]
+                P2["2️⃣ Status → Analyzing<br/>Chama GeminiService"]
+                P3["3️⃣ Status → Completed<br/>Salva resultado"]
+                PF["❌ Status → Failed<br/>Salva erro"]
+            end
+
+            subgraph STORE["JsonMeetingStore"]
+                S1["data/meetings/{id}.json<br/>(persistência em arquivo)"]
+            end
+        end
+
+        subgraph WHISPER["🎤 Whisper (Python subprocess)"]
+            W1["python -m transcriber.transcribe<br/>--json audio.wav medium cpu"]
+            W2["Faster Whisper<br/>(modelo local, offline)"]
+        end
+
+        subgraph GEMINI["🤖 Gemini 2.5 Flash (Google API)"]
+            G1["POST /v1beta/models/<br/>gemini-2.5-flash:generateContent"]
+            G2["Prompt → resumo, ações,<br/>decisões, dúvidas"]
+        end
+
+        A1 -->|"multipart/form-data"| C1
+        C1 --> C2
+        C1 -->|"enfileira meetingId"| Q
+        A2 --> C3
+        A3 --> C4
+
+        Q --> P1
+        P1 -->|"subprocess"| W1
+        W1 --> W2
+        W2 -->|"JSON stdout"| P1
+        P1 --> P2
+        P2 -->|"HTTPS + API Key"| G1
+        G1 --> G2
+        G2 -->|"JSON response"| P2
+        P2 --> P3
+        P1 -.->|"erro"| PF
+        P2 -.->|"erro"| PF
+
+        C1 -->|"salva"| S1
+        P1 -->|"atualiza"| S1
+        P2 -->|"atualiza"| S1
+        P3 -->|"atualiza"| S1
+        C3 -->|"lê"| S1
+        C4 -->|"lê"| S1
+
+        style CLIENT fill:#1a2332,stroke:#58a6ff,color:#c9d1d9
+        style ASPNET fill:#1a1f2b,stroke:#f0883e,color:#c9d1d9
+        style WHISPER fill:#1a2b1a,stroke:#3fb950,color:#c9d1d9
+        style GEMINI fill:#2b1a2b,stroke:#bc8cff,color:#c9d1d9
+        style CTRL fill:#21262d,stroke:#58a6ff,color:#c9d1d9
+        style BG fill:#21262d,stroke:#f0883e,color:#c9d1d9
+        style STORE fill:#21262d,stroke:#f0883e,color:#c9d1d9
+        style Q fill:#2d1f0d,stroke:#f0883e,color:#f0883e
+    </div>
+
+    <div class="mermaid">
+    sequenceDiagram
+        participant U as 👤 Usuário
+        participant API as 🧠 ASP.NET Core
+        participant Q as 📥 Queue (Channel)
+        participant BG as ⚙️ BackgroundService
+        participant W as 🎤 Whisper (Python)
+        participant G as 🤖 Gemini API
+        participant S as 💾 JSON Store
+
+        U->>API: POST /api/meetings/upload (áudio)
+        API->>S: Salva Meeting (status: Uploaded)
+        API->>Q: Enfileira meetingId
+        API-->>U: 202 Accepted {meetingId}
+
+        Note over BG: Loop contínuo lendo da fila
+
+        Q->>BG: meetingId
+        BG->>S: Status → Transcribing
+        BG->>W: python -m transcriber.transcribe --json
+        W-->>BG: {text, segments, language}
+        BG->>S: Salva transcript
+
+        BG->>S: Status → Analyzing
+        BG->>G: POST generateContent (transcript + prompt)
+        G-->>BG: {summary, actionItems, decisions, pendingQuestions}
+        BG->>S: Salva analysis
+
+        BG->>S: Status → Completed
+
+        U->>API: GET /api/meetings/{id}
+        API->>S: Lê meeting JSON
+        API-->>U: 200 OK {meeting com transcript + analysis}
+    </sequenceDiagram>
+    </div>
+
+    <div class="legend">
+        <h3>📋 Componentes</h3>
+        <table>
+            <tr><td>MeetingsController</td><td>3 endpoints REST — upload, get by id, list all</td></tr>
+            <tr><td>MeetingProcessingQueue</td><td>Fila in-memory (Channel&lt;Guid&gt;) entre controller e background service</td></tr>
+            <tr><td>MeetingProcessingService</td><td>BackgroundService que orquestra o pipeline: transcrição → análise → salvar</td></tr>
+            <tr><td>WhisperService</td><td>Chama Python via subprocess — roda Faster Whisper localmente (offline)</td></tr>
+            <tr><td>GeminiService</td><td>Chama Gemini 2.5 Flash via HTTPS — analisa transcript e extrai insights</td></tr>
+            <tr><td>JsonMeetingStore</td><td>Persistência simples em arquivos JSON — cada meeting = 1 arquivo</td></tr>
+        </table>
+        <h3 style="margin-top:20px">📊 Status Pipeline</h3>
+        <table>
+            <tr><td>0 — Uploaded</td><td>Áudio recebido, aguardando processamento</td></tr>
+            <tr><td>1 — Transcribing</td><td>Whisper está transcrevendo o áudio</td></tr>
+            <tr><td>2 — Analyzing</td><td>Gemini está analisando o transcript</td></tr>
+            <tr><td>3 — Completed</td><td>Tudo pronto — transcript + análise disponíveis</td></tr>
+            <tr><td>4 — Failed</td><td>Erro em alguma etapa — ver errorMessage</td></tr>
+        </table>
+    </div>
+
+    <script>mermaid.initialize({ theme: 'dark', startOnLoad: true });</script>
+</body>
+</html>

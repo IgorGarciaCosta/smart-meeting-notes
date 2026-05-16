@@ -55,27 +55,38 @@ public class MeetingProcessingService : BackgroundService
 
         try
         {
-            // Step 1: Transcribe
-            meeting.Status = MeetingStatus.Transcribing;
-            await store.SaveAsync(meeting);
-            _logger.LogInformation("[{MeetingId}] Transcribing...", meetingId);
+            if (meeting.IsChunked)
+            {
+                // Chunked flow: transcription already done per-chunk, just analyze
+                meeting.Status = MeetingStatus.Analyzing;
+                await store.SaveAsync(meeting);
+                _logger.LogInformation("[{MeetingId}] Chunked meeting — skipping transcription, analyzing...", meetingId);
+            }
+            else
+            {
+                // Single-file flow: transcribe then analyze
+                meeting.Status = MeetingStatus.Transcribing;
+                await store.SaveAsync(meeting);
+                _logger.LogInformation("[{MeetingId}] Transcribing...", meetingId);
 
-            var whisper = scope.ServiceProvider.GetRequiredService<IWhisperService>();
-            var transcription = await whisper.TranscribeAsync(meeting.AudioFilePath);
-            meeting.Transcript = transcription;
-            await store.SaveAsync(meeting);
-            _logger.LogInformation("[{MeetingId}] Transcription done ({Chars} chars)", meetingId, transcription.Text.Length);
+                var whisper = scope.ServiceProvider.GetRequiredService<IWhisperService>();
+                var transcription = await whisper.TranscribeAsync(meeting.AudioFilePath);
+                meeting.Transcript = transcription;
+                await store.SaveAsync(meeting);
+                _logger.LogInformation("[{MeetingId}] Transcription done ({Chars} chars)", meetingId, transcription.Text.Length);
 
-            // Step 2: Analyze with LLM
-            meeting.Status = MeetingStatus.Analyzing;
-            await store.SaveAsync(meeting);
+                meeting.Status = MeetingStatus.Analyzing;
+                await store.SaveAsync(meeting);
+            }
+
+            // Analyze with LLM
             _logger.LogInformation("[{MeetingId}] Analyzing with Gemini...", meetingId);
 
             var gemini = scope.ServiceProvider.GetRequiredService<IGeminiService>();
-            var analysis = await gemini.AnalyzeTranscriptAsync(transcription.Text);
+            var analysis = await gemini.AnalyzeTranscriptAsync(meeting.Transcript!.Text);
             meeting.Analysis = analysis;
 
-            // Step 3: Done
+            // Done
             meeting.Status = MeetingStatus.Completed;
             await store.SaveAsync(meeting);
             _logger.LogInformation("[{MeetingId}] Processing completed!", meetingId);

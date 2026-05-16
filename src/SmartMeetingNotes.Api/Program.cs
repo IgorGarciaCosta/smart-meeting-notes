@@ -6,6 +6,12 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel max request body size (200 MB default)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 200 * 1024 * 1024;
+});
+
 // Add .env variables to configuration
 builder.Configuration.AddEnvironmentVariables();
 
@@ -33,6 +39,9 @@ builder.Services.AddSingleton<IMeetingStore, JsonMeetingStore>();
 // Processing queue (in-memory channel)
 builder.Services.AddSingleton<MeetingProcessingQueue>();
 
+// Chunk processing queue and service
+builder.Services.AddSingleton<ChunkProcessingQueue>();
+
 // Whisper transcription via Python subprocess (no separate server needed)
 builder.Services.AddSingleton<IWhisperService, WhisperService>();
 
@@ -43,8 +52,9 @@ builder.Services.AddHttpClient<IGeminiService, GeminiService>(client =>
     client.Timeout = TimeSpan.FromMinutes(2);
 });
 
-// Background processing service
+// Background processing services
 builder.Services.AddHostedService<MeetingProcessingService>();
+builder.Services.AddHostedService<ChunkProcessingService>();
 
 var app = builder.Build();
 
