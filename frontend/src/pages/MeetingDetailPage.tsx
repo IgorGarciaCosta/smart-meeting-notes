@@ -28,11 +28,20 @@ export default function MeetingDetailPage() {
       <h1>{meeting.title}</h1>
       <p>
         <strong>Status:</strong> {meeting.status} &nbsp;|&nbsp;
-        <strong>Data:</strong> {new Date(meeting.uploadedAt).toLocaleString("pt-BR")}
+        <strong>Data:</strong>{" "}
+        {new Date(meeting.uploadedAt).toLocaleString("pt-BR")}
       </p>
 
       {meeting.errorMessage && (
-        <div style={{ padding: 12, background: "#f8d7da", borderRadius: 6, color: "#721c24", marginBottom: 16 }}>
+        <div
+          style={{
+            padding: 12,
+            background: "#f8d7da",
+            borderRadius: 6,
+            color: "#721c24",
+            marginBottom: 16,
+          }}
+        >
           <strong>Erro:</strong> {meeting.errorMessage}
         </div>
       )}
@@ -44,7 +53,9 @@ export default function MeetingDetailPage() {
             {meeting.chunks.map((c) => (
               <li key={c.chunkIndex}>
                 Chunk {c.chunkIndex} — <em>{c.status}</em>
-                {c.errorMessage && <span style={{ color: "red" }}> ({c.errorMessage})</span>}
+                {c.errorMessage && (
+                  <span style={{ color: "red" }}> ({c.errorMessage})</span>
+                )}
               </li>
             ))}
           </ul>
@@ -54,7 +65,9 @@ export default function MeetingDetailPage() {
       {meeting.transcript && (
         <div style={{ marginBottom: 24 }}>
           <h2>Transcrição</h2>
-          <p style={{ fontSize: 12, color: "#666" }}>Idioma: {meeting.transcript.language}</p>
+          <p style={{ fontSize: 12, color: "#666" }}>
+            Idioma: {meeting.transcript.language}
+          </p>
           <div
             style={{
               background: "#f8f9fa",

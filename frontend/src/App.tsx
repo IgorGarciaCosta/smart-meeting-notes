@@ -18,7 +18,10 @@ export default function App() {
         <Link to="/" style={{ fontWeight: 600, textDecoration: "none" }}>
           🎙️ Gravar
         </Link>
-        <Link to="/meetings" style={{ fontWeight: 600, textDecoration: "none" }}>
+        <Link
+          to="/meetings"
+          style={{ fontWeight: 600, textDecoration: "none" }}
+        >
           📋 Reuniões
         </Link>
       </nav>

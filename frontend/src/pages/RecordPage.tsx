@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAudioRecorder } from "../hooks/useAudioRecorder.ts";
-import { createMeeting, uploadChunk, finalizeMeeting } from "../api/meetings.ts";
+import {
+  createMeeting,
+  uploadChunk,
+  finalizeMeeting,
+} from "../api/meetings.ts";
 
 export default function RecordPage() {
   const [title, setTitle] = useState("");
@@ -34,7 +38,7 @@ export default function RecordPage() {
         setStatus(`Erro no upload do chunk ${index}: ${e}`);
       }
     },
-    [meetingId]
+    [meetingId],
   );
 
   // Wire chunk callback
@@ -77,7 +81,9 @@ export default function RecordPage() {
     if (!meetingId) return;
 
     setFinalizing(true);
-    setStatus("Parando gravação... Aguardando transcrição dos chunks para finalizar.");
+    setStatus(
+      "Parando gravação... Aguardando transcrição dos chunks para finalizar.",
+    );
 
     // Poll until all chunks are transcribed, then finalize
     const pollAndFinalize = async () => {
@@ -101,7 +107,9 @@ export default function RecordPage() {
           return;
         }
       }
-      setStatus("Timeout aguardando transcrição. Verifique o status da reunião manualmente.");
+      setStatus(
+        "Timeout aguardando transcrição. Verifique o status da reunião manualmente.",
+      );
       setFinalizing(false);
     };
 
@@ -119,14 +127,31 @@ export default function RecordPage() {
       <h1>🎙️ Gravar Reunião</h1>
 
       {!recorder.permissionGranted && (
-        <div style={{ marginBottom: 16, padding: 12, background: "#fff3cd", borderRadius: 6 }}>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 12,
+            background: "#fff3cd",
+            borderRadius: 6,
+          }}
+        >
           <p>Permissão de microfone necessária para listar dispositivos.</p>
-          <button onClick={recorder.requestPermission}>Permitir Microfone</button>
+          <button onClick={recorder.requestPermission}>
+            Permitir Microfone
+          </button>
         </div>
       )}
 
       {recorder.error && (
-        <div style={{ marginBottom: 16, padding: 12, background: "#f8d7da", borderRadius: 6, color: "#721c24" }}>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 12,
+            background: "#f8d7da",
+            borderRadius: 6,
+            color: "#721c24",
+          }}
+        >
           {recorder.error}
         </div>
       )}
@@ -141,7 +166,9 @@ export default function RecordPage() {
           disabled={recorder.isRecording}
           style={{ width: "100%", padding: 8 }}
         >
-          {recorder.devices.length === 0 && <option value="">Nenhum dispositivo encontrado</option>}
+          {recorder.devices.length === 0 && (
+            <option value="">Nenhum dispositivo encontrado</option>
+          )}
           {recorder.devices.map((d) => (
             <option key={d.deviceId} value={d.deviceId}>
               {d.label}
@@ -205,7 +232,9 @@ export default function RecordPage() {
               🔴 Gravando — {formatTime(elapsed)}
             </p>
           )}
-          <p>Chunks enviados: <strong>{chunksUploaded}</strong></p>
+          <p>
+            Chunks enviados: <strong>{chunksUploaded}</strong>
+          </p>
           {meetingId && (
             <p style={{ fontSize: 12, color: "#666" }}>
               Meeting ID: <code>{meetingId}</code>
@@ -215,7 +244,9 @@ export default function RecordPage() {
       )}
 
       {status && (
-        <p style={{ marginTop: 16, fontStyle: "italic", color: "#555" }}>{status}</p>
+        <p style={{ marginTop: 16, fontStyle: "italic", color: "#555" }}>
+          {status}
+        </p>
       )}
     </div>
   );
