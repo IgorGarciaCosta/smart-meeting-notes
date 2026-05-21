@@ -91,21 +91,21 @@ export default function RecordPage() {
         await new Promise((r) => setTimeout(r, 5000));
         try {
           const result = await finalizeMeeting(meetingId);
+          if (result.status === "pending") {
+            setStatus(`Aguardando transcrição... (${i + 1}/${maxAttempts})`);
+            continue;
+          }
           setStatus(`Reunião finalizada! ${result.message}`);
           setFinalizing(false);
           return;
         } catch (e) {
           const msg = String(e);
-          if (msg.includes("Not all chunks are transcribed")) {
-            setStatus(`Aguardando transcrição... (${i + 1}/${maxAttempts})`);
-            continue;
-          }
           if (
             msg.includes("cannot finalize") ||
             msg.includes("Failed") ||
-            msg.includes("cannot upload")
+            msg.includes("cannot upload") ||
+            msg.includes("failed transcription")
           ) {
-            // Meeting is in a bad state, stop retrying
             setStatus(`Erro: ${msg}`);
             setFinalizing(false);
             return;

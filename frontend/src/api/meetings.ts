@@ -29,7 +29,7 @@ export async function uploadChunk(
   if (!res.ok) throw new Error(`Failed to upload chunk ${chunkIndex}: ${res.statusText}`);
 }
 
-export async function finalizeMeeting(meetingId: string): Promise<MeetingUploadResponse> {
+export async function finalizeMeeting(meetingId: string): Promise<MeetingUploadResponse & { status?: string }> {
   const res = await fetch(`${BASE}/${meetingId}/finalize`, { method: "POST" });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

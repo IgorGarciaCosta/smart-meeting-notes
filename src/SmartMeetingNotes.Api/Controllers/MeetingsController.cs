@@ -184,8 +184,15 @@ public class MeetingsController : ControllerBase
         var pendingChunks = meeting.Chunks.Where(c => c.Status != ChunkStatus.Transcribed).ToList();
         if (pendingChunks.Count > 0)
         {
+            var failedChunks = pendingChunks.Where(c => c.Status == ChunkStatus.Failed).ToList();
+            if (failedChunks.Count > 0)
+            {
+                var errors = failedChunks.Select(c => $"chunk {c.ChunkIndex}: {c.ErrorMessage}");
+                return BadRequest(new { error = "Some chunks failed transcription", failed = errors });
+            }
+
             var statuses = pendingChunks.Select(c => $"chunk {c.ChunkIndex}: {c.Status}");
-            return BadRequest(new { error = "Not all chunks are transcribed", pending = statuses });
+            return Accepted(new { status = "pending", message = "Not all chunks are transcribed yet", pending = statuses });
         }
 
         // Merge transcriptions in order
