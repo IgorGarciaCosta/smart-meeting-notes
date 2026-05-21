@@ -10,6 +10,7 @@ export default function RecordPage() {
   const [title, setTitle] = useState("");
   const [chunkDuration, setChunkDuration] = useState(30);
   const [selectedDevice, setSelectedDevice] = useState("");
+  const [captureSystemAudio, setCaptureSystemAudio] = useState(false);
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [chunksUploaded, setChunksUploaded] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -57,7 +58,11 @@ export default function RecordPage() {
       setElapsed(0);
       setStatus("");
 
-      recorder.start(selectedDevice);
+      if (captureSystemAudio) {
+        recorder.startWithSystemAudio(selectedDevice);
+      } else {
+        recorder.start(selectedDevice);
+      }
 
       timerRef.current = setInterval(() => {
         setElapsed((e) => e + 1);
@@ -211,6 +216,40 @@ export default function RecordPage() {
             />
           </div>
         </div>
+
+        {recorder.supportsSystemAudio && (
+          <div className="form-group" style={{ paddingTop: 4 }}>
+            <label
+              className="form-label"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={captureSystemAudio}
+                onChange={(e) => setCaptureSystemAudio(e.target.checked)}
+                disabled={recorder.isRecording}
+              />
+              Capturar áudio do sistema (mic + som da máquina)
+            </label>
+            {captureSystemAudio && (
+              <p
+                style={{
+                  fontSize: "0.85em",
+                  opacity: 0.7,
+                  margin: "4px 0 0 26px",
+                }}
+              >
+                O navegador pedirá permissão para compartilhar o áudio do
+                sistema.
+              </p>
+            )}
+          </div>
+        )}
 
         <div
           style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}

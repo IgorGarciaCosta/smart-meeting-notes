@@ -59,6 +59,35 @@ def get_loopback_devices() -> list[dict]:
     return loopback_devices
 
 
+def get_default_mic() -> dict | None:
+    """Return the system default microphone device, or None if unavailable."""
+    try:
+        default_idx = sd.default.device[0]  # default input device index
+        if default_idx is None or default_idx < 0:
+            # Fallback: pick first input device
+            inputs = get_input_devices()
+            return inputs[0] if inputs else None
+        dev = sd.query_devices(default_idx)
+        if dev["max_input_channels"] > 0:
+            return {
+                "index": default_idx,
+                "name": dev["name"],
+                "channels": dev["max_input_channels"],
+                "samplerate": int(dev["default_samplerate"]),
+                "hostapi": sd.query_hostapis(dev["hostapi"])["name"],
+            }
+    except Exception:
+        pass
+    inputs = get_input_devices()
+    return inputs[0] if inputs else None
+
+
+def get_default_loopback() -> dict | None:
+    """Return the first available WASAPI loopback device, or None if unavailable."""
+    loopbacks = get_loopback_devices()
+    return loopbacks[0] if loopbacks else None
+
+
 def list_all_devices() -> list[dict]:
     """List all available audio capture devices (mic + loopback)."""
     devices = get_input_devices() + get_loopback_devices()

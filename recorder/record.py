@@ -9,6 +9,8 @@ Usage:
     python -m recorder.record
     python -m recorder.record --device 0 --title "Standup" --api http://localhost:5035
     python -m recorder.record --chunk-duration 30
+    python -m recorder.record --mix --title "All Audio"  (captures mic + system audio simultaneously)
+    python -m recorder.record --mix --mic-device 0 --loopback-device 5
 """
 
 import argparse
@@ -19,8 +21,16 @@ import time
 from pathlib import Path
 
 from recorder.api_client import ApiError, MeetingApiClient
-from recorder.capture import AudioCapture
-from recorder.devices import list_all_devices, print_devices, select_device
+from recorder.capture import AudioCapture, MixedAudioCapture
+from recorder.devices import (
+    get_default_loopback,
+    get_default_mic,
+    get_input_devices,
+    get_loopback_devices,
+    list_all_devices,
+    print_devices,
+    select_device,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -54,6 +64,23 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Não finalizar automaticamente (permite adicionar mais chunks depois)",
     )
+    parser.add_argument(
+        "--mix",
+        action="store_true",
+        help="Captura mic + áudio do sistema simultaneamente (mixados)",
+    )
+    parser.add_argument(
+        "--mic-device",
+        type=int,
+        default=None,
+        help="Índice do microfone para modo --mix (se omitido, usa o padrão do sistema)",
+    )
+    parser.add_argument(
+        "--loopback-device",
+        type=int,
+        default=None,
+        help="Índice do dispositivo loopback para modo --mix (se omitido, usa o primeiro disponível)",
+    )
     return parser.parse_args()
 
 
@@ -84,6 +111,47 @@ def upload_worker(
             break
 
 
+def _resolve_mix_devices(args) -> tuple[dict, dict]:
+    """Resolve mic and loopback devices for --mix mode."""
+    # Resolve mic device
+    if args.mic_device is not None:
+        all_devs = list_all_devices()
+        if args.mic_device < 0 or args.mic_device >= len(all_devs):
+            print(f"Erro: dispositivo mic {args.mic_device} não encontrado.")
+            sys.exit(1)
+        mic_dev = all_devs[args.mic_device]
+    else:
+        mic_dev = get_default_mic()
+        if mic_dev is None:
+            print("Erro: nenhum microfone encontrado para modo --mix.")
+            print("Use --mic-device N para especificar manualmente.")
+            sys.exit(1)
+
+    # Resolve loopback device
+    if args.loopback_device is not None:
+        all_devs = list_all_devices()
+        if args.loopback_device < 0 or args.loopback_device >= len(all_devs):
+            print(
+                f"Erro: dispositivo loopback {args.loopback_device} não encontrado.")
+            sys.exit(1)
+        loopback_dev = all_devs[args.loopback_device]
+    else:
+        loopback_dev = get_default_loopback()
+        if loopback_dev is None:
+            print(
+                "Erro: nenhum dispositivo loopback (WASAPI) encontrado para modo --mix.")
+            print("Use --loopback-device N para especificar manualmente.")
+            print("(Loopback requer Windows com WASAPI)")
+            sys.exit(1)
+
+    print(f"\n✓ Modo MIX — capturando mic + sistema simultaneamente")
+    print(f"  Mic:      {mic_dev['name']} ({mic_dev['samplerate']} Hz)")
+    print(
+        f"  Loopback: {loopback_dev['name']} ({loopback_dev['samplerate']} Hz)")
+
+    return mic_dev, loopback_dev
+
+
 def main():
     args = parse_args()
 
@@ -92,18 +160,23 @@ def main():
     print("╚══════════════════════════════════════════╝\n")
 
     # --- Device selection ---
-    devices = list_all_devices()
-
-    if args.device is not None:
-        if args.device < 0 or args.device >= len(devices):
-            print(f"Erro: dispositivo {args.device} não encontrado.")
-            sys.exit(1)
-        device = devices[args.device]
+    if args.mix:
+        # Mix mode: capture mic + loopback simultaneously
+        mic_dev, loopback_dev = _resolve_mix_devices(args)
     else:
-        device = select_device(devices)
+        devices = list_all_devices()
 
-    print(f"\n✓ Dispositivo: {device['name']}")
-    print(f"  Taxa: {device['samplerate']} Hz | Canais: {device['channels']}")
+        if args.device is not None:
+            if args.device < 0 or args.device >= len(devices):
+                print(f"Erro: dispositivo {args.device} não encontrado.")
+                sys.exit(1)
+            device = devices[args.device]
+        else:
+            device = select_device(devices)
+
+        print(f"\n✓ Dispositivo: {device['name']}")
+        print(
+            f"  Taxa: {device['samplerate']} Hz | Canais: {device['channels']}")
 
     # --- Meeting title ---
     if args.title:
@@ -134,15 +207,26 @@ def main():
     print(f"  Chunk duration: {args.chunk_duration}s")
 
     # --- Setup capture ---
-    is_loopback = device.get("is_loopback", False)
-    capture = AudioCapture(
-        device_index=device["index"],
-        device_samplerate=device["samplerate"],
-        # Max stereo, will be mixed to mono
-        channels=min(device["channels"], 2),
-        chunk_duration=args.chunk_duration,
-        is_loopback=is_loopback,
-    )
+    if args.mix:
+        capture = MixedAudioCapture(
+            mic_device_index=mic_dev["index"],
+            mic_samplerate=mic_dev["samplerate"],
+            loopback_device_index=loopback_dev["index"],
+            loopback_samplerate=loopback_dev["samplerate"],
+            mic_channels=min(mic_dev["channels"], 2),
+            loopback_channels=min(loopback_dev["channels"], 2),
+            chunk_duration=args.chunk_duration,
+        )
+    else:
+        is_loopback = device.get("is_loopback", False)
+        capture = AudioCapture(
+            device_index=device["index"],
+            device_samplerate=device["samplerate"],
+            # Max stereo, will be mixed to mono
+            channels=min(device["channels"], 2),
+            chunk_duration=args.chunk_duration,
+            is_loopback=is_loopback,
+        )
 
     # --- Wait for user to start ---
     print("\n" + "─" * 44)
