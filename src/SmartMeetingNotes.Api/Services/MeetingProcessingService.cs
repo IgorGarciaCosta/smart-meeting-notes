@@ -4,7 +4,7 @@ namespace SmartMeetingNotes.Api.Services;
 
 /// <summary>
 /// Background service that processes meetings from the queue.
-/// Pipeline: Transcribing → Analyzing → Completed (or Failed).
+/// Pipeline: Analyzing → Completed (or Failed).
 /// </summary>
 public class MeetingProcessingService : BackgroundService
 {
@@ -55,29 +55,9 @@ public class MeetingProcessingService : BackgroundService
 
         try
         {
-            if (meeting.IsChunked)
-            {
-                // Chunked flow: transcription already done per-chunk, just analyze
-                meeting.Status = MeetingStatus.Analyzing;
-                await store.SaveAsync(meeting);
-                _logger.LogInformation("[{MeetingId}] Chunked meeting — skipping transcription, analyzing...", meetingId);
-            }
-            else
-            {
-                // Single-file flow: transcribe then analyze
-                meeting.Status = MeetingStatus.Transcribing;
-                await store.SaveAsync(meeting);
-                _logger.LogInformation("[{MeetingId}] Transcribing...", meetingId);
-
-                var whisper = scope.ServiceProvider.GetRequiredService<IWhisperService>();
-                var transcription = await whisper.TranscribeAsync(meeting.AudioFilePath);
-                meeting.Transcript = transcription;
-                await store.SaveAsync(meeting);
-                _logger.LogInformation("[{MeetingId}] Transcription done ({Chars} chars)", meetingId, transcription.Text.Length);
-
-                meeting.Status = MeetingStatus.Analyzing;
-                await store.SaveAsync(meeting);
-            }
+            // Transcription already done per-chunk, proceed to analysis
+            meeting.Status = MeetingStatus.Analyzing;
+            await store.SaveAsync(meeting);
 
             // Analyze with LLM
             _logger.LogInformation("[{MeetingId}] Analyzing with Gemini...", meetingId);

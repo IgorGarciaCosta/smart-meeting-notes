@@ -1,7 +1,5 @@
 export enum MeetingStatus {
-  Uploaded = "Uploaded",
   AwaitingChunks = "AwaitingChunks",
-  Transcribing = "Transcribing",
   Finalizing = "Finalizing",
   Analyzing = "Analyzing",
   Completed = "Completed",
@@ -47,7 +45,6 @@ export interface Meeting {
   title: string;
   uploadedAt: string;
   status: MeetingStatus;
-  audioFilePath: string;
   chunks: AudioChunk[];
   transcript: TranscriptionResult | null;
   analysis: MeetingAnalysis | null;

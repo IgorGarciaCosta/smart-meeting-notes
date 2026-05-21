@@ -29,61 +29,6 @@ public class MeetingsController : ControllerBase
     }
 
     /// <summary>
-    /// Upload an audio file to create a new meeting.
-    /// Returns 202 Accepted with the meeting ID — processing happens in background.
-    /// </summary>
-    [HttpPost("upload")]
-    [RequestSizeLimit(200 * 1024 * 1024)]
-    [ProducesResponseType(typeof(MeetingUploadResponse), StatusCodes.Status202Accepted)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Upload(IFormFile audio, [FromForm] string title = "Untitled Meeting")
-    {
-        if (audio == null || audio.Length == 0)
-            return BadRequest(new { error = "No audio file provided" });
-
-        var maxSize = _configuration.GetValue<long>("Upload:MaxFileSizeBytes", 200 * 1024 * 1024);
-        if (audio.Length > maxSize)
-            return BadRequest(new { error = $"File exceeds maximum size of {maxSize / (1024 * 1024)} MB" });
-
-        var allowedExtensions = new[] { ".mp3", ".wav", ".m4a", ".ogg", ".flac", ".webm" };
-        var extension = Path.GetExtension(audio.FileName).ToLowerInvariant();
-        if (!allowedExtensions.Contains(extension))
-            return BadRequest(new { error = $"Unsupported file type: {extension}" });
-
-        // Save audio to data/audio/
-        var audioDir = _configuration.GetValue<string>("DataPaths:Audio") ?? "data/audio";
-        Directory.CreateDirectory(audioDir);
-
-        var meeting = new Meeting
-        {
-            Title = title,
-            Status = MeetingStatus.Uploaded,
-        };
-
-        var fileName = $"{meeting.Id}{extension}";
-        var filePath = Path.Combine(audioDir, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await audio.CopyToAsync(stream);
-        }
-
-        meeting.AudioFilePath = filePath;
-        await _store.SaveAsync(meeting);
-
-        // Enqueue for background processing
-        await _queue.EnqueueAsync(meeting.Id);
-        _logger.LogInformation("Meeting {MeetingId} uploaded and enqueued for processing", meeting.Id);
-
-        return Accepted(new MeetingUploadResponse
-        {
-            MeetingId = meeting.Id,
-            Status = meeting.Status,
-            Message = "Meeting uploaded. Processing will start shortly.",
-        });
-    }
-
-    /// <summary>
     /// Get a meeting by ID (includes status, transcript, and analysis when ready).
     /// </summary>
     [HttpGet("{id:guid}")]

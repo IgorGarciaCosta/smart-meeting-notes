@@ -6,12 +6,7 @@ import { MeetingStatus, ChunkStatus } from "../api/types.ts";
 
 function statusBadge(status: MeetingStatus) {
   const map: Record<string, { cls: string; label: string }> = {
-    [MeetingStatus.Uploaded]: { cls: "badge--neutral", label: "Uploaded" },
     [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Aguardando" },
-    [MeetingStatus.Transcribing]: {
-      cls: "badge--warning",
-      label: "Transcrevendo",
-    },
     [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizando" },
     [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analisando" },
     [MeetingStatus.Completed]: { cls: "badge--success", label: "Concluída" },
