@@ -105,7 +105,7 @@ public class MeetingsController : ControllerBase
         if (audio.Length > maxChunkSize)
             return BadRequest(new { error = $"Chunk exceeds maximum size of {maxChunkSize / (1024 * 1024)} MB" });
 
-        var maxChunks = _configuration.GetValue<int>("Upload:MaxChunksPerMeeting", 60);
+        var maxChunks = _configuration.GetValue<int>("Upload:MaxChunksPerMeeting", 200);
         if (meeting.Chunks.Count >= maxChunks)
             return BadRequest(new { error = $"Maximum number of chunks ({maxChunks}) reached" });
 
