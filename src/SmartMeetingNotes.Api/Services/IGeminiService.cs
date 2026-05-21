@@ -2,7 +2,7 @@ using SmartMeetingNotes.Api.Models;
 
 namespace SmartMeetingNotes.Api.Services;
 
-public interface IGeminiService
+public interface IAnalysisService
 {
     Task<MeetingAnalysis> AnalyzeTranscriptAsync(string transcript);
 }

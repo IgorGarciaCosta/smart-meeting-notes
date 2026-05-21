@@ -62,7 +62,7 @@ public class MeetingProcessingService : BackgroundService
             // Analyze with LLM
             _logger.LogInformation("[{MeetingId}] Analyzing with Gemini...", meetingId);
 
-            var gemini = scope.ServiceProvider.GetRequiredService<IGeminiService>();
+            var gemini = scope.ServiceProvider.GetRequiredService<IAnalysisService>();
             var analysis = await gemini.AnalyzeTranscriptAsync(meeting.Transcript!.Text);
             meeting.Analysis = analysis;
 

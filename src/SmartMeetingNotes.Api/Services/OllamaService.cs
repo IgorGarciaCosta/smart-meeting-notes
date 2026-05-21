@@ -5,14 +5,14 @@ using SmartMeetingNotes.Api.Models;
 namespace SmartMeetingNotes.Api.Services;
 
 /// <summary>
-/// Calls Gemini 2.5 Flash API to analyze meeting transcripts.
+/// Calls a local Ollama instance to analyze meeting transcripts.
 /// Extracts: summary, action items, decisions, pending questions.
 /// </summary>
-public class GeminiService : IAnalysisService
+public class OllamaService : IAnalysisService
 {
     private readonly HttpClient _httpClient;
-    private readonly ILogger<GeminiService> _logger;
-    private readonly string _apiKey;
+    private readonly ILogger<OllamaService> _logger;
+    private readonly string _model;
 
     private const string AnalysisPrompt = """
         You are a meeting analysis assistant. Analyze the following meeting transcript and extract:
@@ -35,63 +35,54 @@ public class GeminiService : IAnalysisService
         TRANSCRIPT:
         """;
 
-    public GeminiService(HttpClient httpClient, ILogger<GeminiService> logger, IConfiguration configuration)
+    public OllamaService(HttpClient httpClient, ILogger<OllamaService> logger, IConfiguration configuration)
     {
         _httpClient = httpClient;
         _logger = logger;
-        _apiKey = configuration["GEMINI_API_KEY"] ?? string.Empty;
+        _model = configuration["Ollama:Model"] ?? "qwen2.5:14b";
     }
 
     public async Task<MeetingAnalysis> AnalyzeTranscriptAsync(string transcript)
     {
-        if (string.IsNullOrEmpty(_apiKey))
-            throw new InvalidOperationException("GEMINI_API_KEY not configured. Create a .env file with GEMINI_API_KEY=your-key");
-
-        _logger.LogInformation("Sending transcript to Gemini for analysis ({Length} chars)", transcript.Length);
+        _logger.LogInformation("Sending transcript to Ollama ({Model}) for analysis ({Length} chars)", _model, transcript.Length);
 
         var requestBody = new
         {
-            contents = new[]
+            model = _model,
+            messages = new[]
             {
-                new
-                {
-                    parts = new[]
-                    {
-                        new { text = AnalysisPrompt + transcript }
-                    }
-                }
+                new { role = "user", content = AnalysisPrompt + transcript }
             },
-            generationConfig = new
+            stream = false,
+            format = "json",
+            options = new
             {
                 temperature = 0.3,
-                responseMimeType = "application/json",
+                num_ctx = 8192
             }
         };
 
         var jsonRequest = JsonSerializer.Serialize(requestBody);
         var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-        var url = $"/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
-        var response = await _httpClient.PostAsync(url, content);
+        var response = await _httpClient.PostAsync("/v1/chat/completions", content);
         response.EnsureSuccessStatusCode();
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation("Gemini response received ({Length} chars)", jsonResponse.Length);
+        _logger.LogInformation("Ollama response received ({Length} chars)", jsonResponse.Length);
 
-        // Gemini response structure: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
         using var doc = JsonDocument.Parse(jsonResponse);
         var textResult = doc.RootElement
-            .GetProperty("candidates")[0]
+            .GetProperty("choices")[0]
+            .GetProperty("message")
             .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
             .GetString()
-            ?? throw new InvalidOperationException("Empty response from Gemini");
+            ?? throw new InvalidOperationException("Empty response from Ollama");
 
         var analysis = JsonSerializer.Deserialize<MeetingAnalysis>(textResult, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
-        }) ?? throw new InvalidOperationException("Failed to deserialize Gemini analysis");
+        }) ?? throw new InvalidOperationException("Failed to deserialize Ollama analysis");
 
         return analysis;
     }

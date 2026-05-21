@@ -45,11 +45,12 @@ builder.Services.AddSingleton<ChunkProcessingQueue>();
 // Whisper transcription via Python subprocess (no separate server needed)
 builder.Services.AddSingleton<IWhisperService, WhisperService>();
 
-// Gemini HTTP client → Google Generative AI API
-builder.Services.AddHttpClient<IGeminiService, GeminiService>(client =>
+// Ollama (local LLM) HTTP client
+builder.Services.AddHttpClient<IAnalysisService, OllamaService>(client =>
 {
-    client.BaseAddress = new Uri("https://generativelanguage.googleapis.com");
-    client.Timeout = TimeSpan.FromMinutes(2);
+    var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
+    client.BaseAddress = new Uri(ollamaUrl);
+    client.Timeout = TimeSpan.FromMinutes(5);
 });
 
 // Background processing services
