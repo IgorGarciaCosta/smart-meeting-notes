@@ -21,7 +21,7 @@ def transcribe_to_dict(audio_path: str, model_size: str = "medium", device: str 
 
     model = WhisperModel(model_size, device=device, compute_type="int8")
     segments_gen, info = model.transcribe(
-        str(path), beam_size=5, language="pt")
+        str(path), beam_size=5, task="transcribe")
 
     t0 = time.time()
     segments_list = []

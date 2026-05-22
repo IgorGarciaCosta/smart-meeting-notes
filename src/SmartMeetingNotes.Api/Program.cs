@@ -45,13 +45,8 @@ builder.Services.AddSingleton<ChunkProcessingQueue>();
 // Whisper transcription via Python subprocess (no separate server needed)
 builder.Services.AddSingleton<IWhisperService, WhisperService>();
 
-// Ollama (local LLM) HTTP client
-builder.Services.AddHttpClient<IAnalysisService, OllamaService>(client =>
-{
-    var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
-    client.BaseAddress = new Uri(ollamaUrl);
-    client.Timeout = TimeSpan.FromMinutes(5);
-});
+// Qwen analysis via Python subprocess (no separate server needed)
+builder.Services.AddSingleton<IAnalysisService, QwenAnalysisService>();
 
 // Background processing services
 builder.Services.AddHostedService<MeetingProcessingService>();
