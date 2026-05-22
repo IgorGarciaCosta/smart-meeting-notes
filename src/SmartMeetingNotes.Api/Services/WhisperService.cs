@@ -29,7 +29,7 @@ public class WhisperService : IWhisperService
             ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
         _pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
             ?? Path.Combine(_projectRoot, "venv", "Scripts", "python.exe");
-        _whisperModel = configuration.GetValue<string>("Whisper:Model") ?? "medium";
+        _whisperModel = configuration.GetValue<string>("Whisper:Model") ?? "distil-large-v3";
         _whisperDevice = configuration.GetValue<string>("Whisper:Device") ?? "cpu";
     }
 
