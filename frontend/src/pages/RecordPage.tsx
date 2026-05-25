@@ -4,6 +4,7 @@ import {
   createMeeting,
   uploadChunk,
   finalizeMeeting,
+  getMeeting,
 } from "../api/meetings.ts";
 
 export default function RecordPage() {
@@ -95,9 +96,9 @@ export default function RecordPage() {
             setStatus(`Aguardando transcrição... (${i + 1}/${maxAttempts})`);
             continue;
           }
-          setStatus(`Reunião finalizada! ${result.message}`);
-          setFinalizing(false);
-          return;
+          // Finalize accepted — now poll until analysis completes
+          setStatus("Análise em andamento...");
+          break;
         } catch (e) {
           const msg = String(e);
           if (
@@ -106,11 +107,45 @@ export default function RecordPage() {
             msg.includes("cannot upload") ||
             msg.includes("failed transcription")
           ) {
+            // If already finalizing/analyzing, move to the status polling phase
+            if (
+              msg.includes("Finalizing") ||
+              msg.includes("Analyzing") ||
+              msg.includes("Completed")
+            ) {
+              setStatus("Análise em andamento...");
+              break;
+            }
             setStatus(`Erro: ${msg}`);
             setFinalizing(false);
             return;
           }
           setStatus(`Erro ao finalizar: ${msg}`);
+          setFinalizing(false);
+          return;
+        }
+      }
+
+      // Poll meeting status until Completed or Failed
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        try {
+          const meeting = await getMeeting(meetingId);
+          if (meeting.status === "Completed") {
+            setStatus("Reunião finalizada e análise concluída!");
+            setFinalizing(false);
+            return;
+          }
+          if (meeting.status === "Failed") {
+            setStatus(
+              `Erro na análise: ${meeting.errorMessage || "desconhecido"}`,
+            );
+            setFinalizing(false);
+            return;
+          }
+          setStatus(`Análise em andamento... (${i + 1}/${maxAttempts})`);
+        } catch (e) {
+          setStatus(`Erro ao verificar status: ${e}`);
           setFinalizing(false);
           return;
         }

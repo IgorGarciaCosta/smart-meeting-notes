@@ -52,6 +52,9 @@ public class WhisperService : IWhisperService
             StandardErrorEncoding = System.Text.Encoding.UTF8,
         };
 
+        // Force Python to use UTF-8 for stdin/stdout/stderr regardless of Windows locale
+        psi.Environment["PYTHONUTF8"] = "1";
+
         using var process = Process.Start(psi)
             ?? throw new InvalidOperationException("Failed to start Python process");
 

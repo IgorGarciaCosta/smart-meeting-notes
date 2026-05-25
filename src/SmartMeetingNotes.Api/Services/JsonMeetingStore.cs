@@ -15,6 +15,7 @@ public class JsonMeetingStore : IMeetingStore
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
     };
 
     public JsonMeetingStore(IConfiguration configuration)
