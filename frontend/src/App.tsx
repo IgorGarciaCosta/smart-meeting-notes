@@ -1,7 +1,34 @@
-import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  NavLink,
+  useLocation,
+} from "react-router-dom";
 import RecordPage from "./pages/RecordPage.tsx";
 import MeetingsPage from "./pages/MeetingsPage.tsx";
 import MeetingDetailPage from "./pages/MeetingDetailPage.tsx";
+
+function AppRoutes() {
+  const location = useLocation();
+  const isRecordPage = location.pathname === "/";
+
+  return (
+    <>
+      {/* RecordPage is always mounted to preserve state; hidden via CSS when not active */}
+      <div style={{ display: isRecordPage ? "block" : "none" }}>
+        <RecordPage />
+      </div>
+
+      {!isRecordPage && (
+        <Routes location={location}>
+          <Route path="/meetings" element={<MeetingsPage />} />
+          <Route path="/meetings/:id" element={<MeetingDetailPage />} />
+        </Routes>
+      )}
+    </>
+  );
+}
 
 export default function App() {
   return (
@@ -38,11 +65,7 @@ export default function App() {
         </NavLink>
       </nav>
 
-      <Routes>
-        <Route path="/" element={<RecordPage />} />
-        <Route path="/meetings" element={<MeetingsPage />} />
-        <Route path="/meetings/:id" element={<MeetingDetailPage />} />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }
