@@ -4,5 +4,5 @@ namespace SmartMeetingNotes.Api.Services;
 
 public interface IWhisperService
 {
-    Task<TranscriptionResult> TranscribeAsync(string audioFilePath);
+    Task<TranscriptionResult> TranscribeAsync(string audioFilePath, CancellationToken cancellationToken = default);
 }

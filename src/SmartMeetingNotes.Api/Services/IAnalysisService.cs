@@ -4,5 +4,5 @@ namespace SmartMeetingNotes.Api.Services;
 
 public interface IAnalysisService
 {
-    Task<MeetingAnalysis> AnalyzeTranscriptAsync(string transcript);
+    Task<MeetingAnalysis> AnalyzeTranscriptAsync(string transcript, CancellationToken cancellationToken = default);
 }
