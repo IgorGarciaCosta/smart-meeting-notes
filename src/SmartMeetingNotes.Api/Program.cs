@@ -1,7 +1,7 @@
 using SmartMeetingNotes.Api.Middleware;
 using SmartMeetingNotes.Api.Services;
 
-// Load .env file if it exists (GEMINI_API_KEY etc.)
+// Load .env file if it exists
 DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);

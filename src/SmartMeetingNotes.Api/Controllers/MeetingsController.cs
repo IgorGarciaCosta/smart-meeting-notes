@@ -227,7 +227,7 @@ public class MeetingsController : ControllerBase
         meeting.Status = MeetingStatus.Finalizing;
         await _store.SaveAsync(meeting);
 
-        // Enqueue for Gemini analysis
+        // Enqueue for analysis
         await _queue.EnqueueAsync(meeting.Id);
         _logger.LogInformation("Meeting {MeetingId} finalized and enqueued for analysis", meeting.Id);
 

@@ -60,10 +60,10 @@ public class MeetingProcessingService : BackgroundService
             await store.SaveAsync(meeting);
 
             // Analyze with LLM
-            _logger.LogInformation("[{MeetingId}] Analyzing with Gemini...", meetingId);
+            _logger.LogInformation("[{MeetingId}] Analyzing transcript...", meetingId);
 
-            var gemini = scope.ServiceProvider.GetRequiredService<IAnalysisService>();
-            var analysis = await gemini.AnalyzeTranscriptAsync(meeting.Transcript!.Text);
+            var analysisService = scope.ServiceProvider.GetRequiredService<IAnalysisService>();
+            var analysis = await analysisService.AnalyzeTranscriptAsync(meeting.Transcript!.Text);
             meeting.Analysis = analysis;
 
             // Done
