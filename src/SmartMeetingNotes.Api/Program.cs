@@ -40,6 +40,9 @@ builder.Services.AddCors(options =>
 // Meeting store (JSON files)
 builder.Services.AddSingleton<IMeetingStore, JsonMeetingStore>();
 
+// Meeting service (application layer)
+builder.Services.AddScoped<IMeetingService, MeetingService>();
+
 // Processing queue (in-memory channel)
 builder.Services.AddSingleton<MeetingProcessingQueue>();
 
