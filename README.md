@@ -1,103 +1,175 @@
 # Smart Meeting Notes
 
-AI-powered meeting assistant that listens to Discord/Teams calls and automatically generates technical summaries, action items, decisions, pending questions, and Jira/GitHub tickets — with **engineering context awareness**.
+AI-powered meeting assistant that captures audio from microphone or system audio (WASAPI loopback), automatically transcribes it using Faster Whisper, and generates technical summaries, action items, decisions, and pending questions — all running **100% locally and offline**.
 
 > "o problema era race condition no cache" → gera uma issue técnica decente automaticamente.
 
 ## Features
 
-- **Audio Capture** — Connects to Discord (bot) or captures system audio for Teams
-- **Speech-to-Text** — Transcription local via [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) (gratuito, roda offline)
-- **AI Analysis** — Processa o transcript com LLM para extrair:
-  - Resumo técnico da reunião
-  - Tarefas e responsáveis
-  - Decisões tomadas
-  - Dúvidas pendentes
-- **Integrations** — Cria tickets automaticamente no Jira e/ou GitHub Issues
-- **Engineering Context** — Entende termos técnicos e gera issues com contexto real
+- **Audio Capture** — Records from microphone, system audio (WASAPI loopback), or both mixed simultaneously
+- **Chunked Streaming** — Audio is split into configurable chunks and sent to the API in real-time
+- **Speech-to-Text** — Local transcription via [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) (free, fully offline)
+- **AI Analysis** — Processes transcripts with a local Qwen2.5-7B model (via llama-cpp-python) to extract:
+  - Technical meeting summary
+  - Action items with responsible people
+  - Key decisions made
+  - Pending questions / follow-ups
+- **Web Dashboard** — React SPA to record meetings, browse history, and view analysis results
+- **Fully Offline** — No external API calls; all processing happens on your machine
 
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌────────────────┐
-│  Discord Bot │────▶│ Audio Capture │────▶│ Faster Whisper│────▶│  LLM Analysis  │
-│  / System    │     │  (PCM/WAV)   │     │ (Transcribe) │     │ (Summary/Tasks)│
-│  Audio       │     └──────────────┘     └──────────────┘     └───────┬────────┘
-└─────────────┘                                                       │
-                                                          ┌───────────▼──────────┐
-                                                          │  Output Generation   │
-                                                          │  - Markdown Report   │
-                                                          │  - Jira Tickets      │
-                                                          │  - GitHub Issues     │
-                                                          └──────────────────────┘
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  Python Recorder │────▶│  ASP.NET Core    │────▶│  Faster Whisper  │────▶│  Qwen LLM        │
+│  (mic/loopback/  │     │  Web API         │     │  (transcribe.py) │     │  (analyze.py)    │
+│   mixed audio)   │     │  (.NET 9)        │     │                  │     │                  │
+└──────────────────┘     └────────┬─────────┘     └──────────────────┘     └──────────────────┘
+                                  │
+                         ┌────────▼─────────┐
+                         │  React Frontend  │
+                         │  (Vite + TS)     │
+                         │  Record / Browse │
+                         └──────────────────┘
 ```
+
+### How It Works
+
+1. **Record** — The Python recorder (or the web UI) captures audio and sends WAV chunks to the API
+2. **Transcribe** — The API invokes Faster Whisper via subprocess to convert each chunk to text
+3. **Analyze** — Once finalized, the full transcript is sent to a local Qwen2.5-7B GGUF model for structured analysis
+4. **View** — Results are stored as JSON and displayed in the React dashboard
 
 ## Tech Stack
 
 | Component | Technology |
 |---|---|
-| Backend | ASP.NET (C#) |
-| Transcription | Faster Whisper (Python) — called via subprocess or API |
-| AI/LLM | OpenAI GPT / local model |
-| Audio Capture | Discord.js bot / NAudio (system audio) |
-| Integrations | Jira REST API, GitHub API |
-| Storage | SQLite / PostgreSQL |
+| Backend API | ASP.NET Core (.NET 9, C#) |
+| Transcription | Faster Whisper (Python subprocess) |
+| AI Analysis | Qwen2.5-7B-Instruct GGUF via llama-cpp-python |
+| Audio Recorder | Python (sounddevice, WASAPI loopback) |
+| Frontend | React 19 + TypeScript + Vite |
+| Storage | JSON files (file-based store) |
+| API Docs | Swagger / OpenAPI |
+
+## Project Structure
+
+```
+smart-meeting-notes/
+├── src/SmartMeetingNotes.Api/   # ASP.NET Core Web API
+│   ├── Controllers/             # REST endpoints
+│   ├── Models/                  # DTOs and domain models
+│   ├── Services/                # Business logic, processing queues
+│   └── data/                    # JSON meeting store + audio files
+├── frontend/                    # React SPA (Vite)
+│   └── src/
+│       ├── pages/               # RecordPage, MeetingsPage, MeetingDetailPage
+│       ├── api/                 # API client + types
+│       └── hooks/               # useAudioRecorder
+├── recorder/                    # Python CLI audio recorder
+│   ├── record.py                # Main CLI entry point
+│   ├── capture.py               # Audio capture logic
+│   ├── devices.py               # Device enumeration
+│   └── api_client.py            # HTTP client for the API
+├── transcriber/                 # Faster Whisper transcription module
+│   └── transcribe.py
+├── analyzer/                    # Qwen LLM analysis module
+│   └── analyze.py
+└── requirements.txt             # Python dependencies
+```
 
 ## Whisper Models
 
-O projeto usa [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) para transcrição. Os modelos são baixados automaticamente na primeira execução:
+The project uses [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) for transcription. Models are downloaded automatically on first use:
 
-| Modelo | Qualidade PT-BR | Velocidade | Recomendação |
+| Model | PT-BR Quality | Speed | Recommendation |
 |---|---|---|---|
-| `tiny` | Baixa | Muito rápido | Testes rápidos |
-| `small` | Razoável | Rápido | Máquina limitada |
-| `medium` | Boa | Médio | **Bom equilíbrio (CPU)** |
-| `large-v3` | Melhor | Lento | **Melhor qualidade (GPU)** |
+| `tiny` | Low | Very fast | Quick testing |
+| `small` | Fair | Fast | Limited hardware |
+| `medium` | Good | Medium | **Best balance (CPU)** |
+| `large-v3` | Best | Slow | **Best quality (GPU)** |
 
 ## Getting Started
 
 ### Prerequisites
 
-- .NET 8 SDK
+- .NET 9 SDK
 - Python 3.9+
-- Node.js 18+ (para Discord bot)
-- GPU com CUDA (opcional, mas recomendado para `large-v3`)
+- Node.js 18+
+- GPU with CUDA (optional, recommended for `large-v3`)
 
-### 1. Install Faster Whisper
-
-```bash
-pip install faster-whisper
-```
-
-### 2. Test transcription
-
-```python
-from faster_whisper import WhisperModel
-
-model = WhisperModel("medium", device="cpu", compute_type="int8")
-segments, info = model.transcribe("audio_teste.mp3", beam_size=5)
-
-for segment in segments:
-    print(f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}")
-```
-
-### 3. Clone and run
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/IgorGarciaCosta/smart-meeting-notes.git
 cd smart-meeting-notes
-# setup steps TBD
 ```
+
+### 2. Setup Python environment
+
+```bash
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Linux/macOS
+
+pip install -r requirements.txt
+```
+
+### 3. Run the API
+
+```bash
+cd src/SmartMeetingNotes.Api
+dotnet run
+```
+
+The API will be available at `http://localhost:5117` with Swagger UI at `/swagger`.
+
+### 4. Run the Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The web app opens at `http://localhost:5173`.
+
+### 5. Record a meeting (CLI)
+
+```bash
+python -m recorder.record --title "Daily Standup"
+python -m recorder.record --mix --title "All Audio"   # mic + system audio
+python -m recorder.record --chunk-duration 30          # 30s chunks
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/meetings` | List all meetings |
+| `GET` | `/api/meetings/{id}` | Get meeting details (transcript + analysis) |
+| `POST` | `/api/meetings` | Create a new meeting |
+| `POST` | `/api/meetings/{id}/chunks` | Upload an audio chunk |
+| `POST` | `/api/meetings/{id}/finalize` | Finalize and trigger analysis |
+| `DELETE` | `/api/meetings/{id}` | Delete a meeting |
+| `GET` | `/health` | Health check |
 
 ## Project Status
 
-🚧 **Em desenvolvimento** — Fase inicial de setup e prototipagem.
+🚧 **In active development** — Core pipeline is functional (record → transcribe → analyze → view).
 
 ## Roadmap
 
-- [ ] Setup do Faster Whisper + teste de transcrição PT-BR
-- [ ] Discord bot para captura de áudio
-- [ ] Pipeline de transcrição (áudio → texto)
+- [x] Faster Whisper transcription (PT-BR + multi-language)
+- [x] ASP.NET Core API with chunked upload
+- [x] Python audio recorder (mic + system loopback + mixed)
+- [x] React frontend with recording and browsing
+- [x] Local LLM analysis (Qwen2.5-7B GGUF)
+- [ ] Speaker diarization (who said what)
+- [ ] Real-time transcript streaming via WebSocket
+- [ ] Export to Markdown / PDF
+- [ ] Jira / GitHub Issues integration
+- [ ] Multi-language UI
 - [ ] Integração com LLM para análise do transcript
 - [ ] Geração de resumo técnico estruturado
 - [ ] Criação automática de issues (GitHub/Jira)
