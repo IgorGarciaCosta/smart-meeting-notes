@@ -172,25 +172,23 @@ export default function RecordPage() {
     <div className="page">
       <div className="page-header">
         <h1>New Recording</h1>
-        <p>Configure the device and start capturing the meeting audio.</p>
       </div>
 
       <ModelStatusPanel />
 
       {!recorder.permissionGranted && (
         <div className="alert alert--warning">
-          <span>⚠️</span>
           <div>
-            <strong>Permission required</strong>
+            <strong>Microphone access required</strong>
             <p style={{ marginTop: 4 }}>
-              Allow microphone access to list available devices.
+              Grant permission to list available audio devices.
             </p>
             <button
               className="btn btn--primary"
-              style={{ marginTop: 12 }}
+              style={{ marginTop: 8 }}
               onClick={recorder.requestPermission}
             >
-              Allow Microphone
+              Allow
             </button>
           </div>
         </div>
@@ -198,7 +196,6 @@ export default function RecordPage() {
 
       {recorder.error && (
         <div className="alert alert--error">
-          <span>✕</span>
           <span>{recorder.error}</span>
         </div>
       )}
@@ -295,7 +292,7 @@ export default function RecordPage() {
             onClick={recorder.isRecording ? handleStop : handleStart}
             disabled={finalizing}
           >
-            {recorder.isRecording ? "⏹  Stop Recording" : "●  Start Recording"}
+            {recorder.isRecording ? "Stop" : "Start Recording"}
           </button>
         </div>
       </div>

@@ -1,16 +1,9 @@
 import { useEffect, useState } from "react";
 import { getModelsStatus, type ModelStatus } from "../api/meetings.ts";
 
-const MODEL_DESCRIPTIONS: Record<string, string> = {
-  Whisper:
-    "Audio transcription model (speech-to-text). Converts meeting audio into text.",
-  Qwen: "Text analysis model (LLM). Generates summary, actions, and decisions from the transcript.",
-};
-
 export default function ModelStatusPanel() {
   const [models, setModels] = useState<ModelStatus[] | null>(null);
   const [error, setError] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     getModelsStatus()
@@ -22,10 +15,10 @@ export default function ModelStatusPanel() {
     return (
       <div className="card models-panel">
         <div className="models-panel-header">
-          <span className="card-title">AI Models</span>
+          <span className="card-title">Services</span>
         </div>
         <p className="models-error">
-          Could not check models. Is the server running?
+          Unable to reach processing services.
         </p>
       </div>
     );
@@ -35,11 +28,26 @@ export default function ModelStatusPanel() {
     return (
       <div className="card models-panel">
         <div className="models-panel-header">
-          <span className="card-title">AI Models</span>
+          <span className="card-title">Services</span>
         </div>
-        <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-          Checking models...
+        <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
+          Loading...
         </p>
+      </div>
+    );
+  }
+
+  const hasIssues = models.some((m) => !m.available);
+
+  if (!hasIssues) {
+    return (
+      <div className="models-panel models-panel--inline">
+        {models.map((m) => (
+          <span key={m.name} className="models-inline-item">
+            <span className="models-dot models-dot--ok" />
+            <span className="models-inline-label">{m.name}</span>
+          </span>
+        ))}
       </div>
     );
   }
@@ -47,23 +55,7 @@ export default function ModelStatusPanel() {
   return (
     <div className="card models-panel">
       <div className="models-panel-header">
-        <span className="card-title">AI Models</span>
-        <div
-          className="models-info-icon"
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-        >
-          i
-          {showTooltip && (
-            <div className="models-tooltip">
-              {Object.entries(MODEL_DESCRIPTIONS).map(([name, desc]) => (
-                <div key={name} className="models-tooltip-item">
-                  <strong>{name}:</strong> {desc}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <span className="card-title">Services</span>
       </div>
 
       <div className="models-list">

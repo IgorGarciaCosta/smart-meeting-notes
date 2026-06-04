@@ -69,7 +69,6 @@ export default function MeetingsPage() {
     return (
       <div className="page">
         <div className="alert alert--error">
-          <span>✕</span>
           <span>{error}</span>
         </div>
       </div>
@@ -84,7 +83,6 @@ export default function MeetingsPage() {
 
       {meetings.length === 0 ? (
         <div className="empty-state">
-          <p style={{ fontSize: 32 }}>📭</p>
           <p>No meetings recorded yet.</p>
         </div>
       ) : (
