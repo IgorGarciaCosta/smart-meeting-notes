@@ -9,12 +9,16 @@ AI-powered meeting assistant that captures audio from microphone or system audio
 - **Audio Capture** — Records from microphone, system audio (WASAPI loopback), or both mixed simultaneously
 - **Chunked Streaming** — Audio is split into configurable chunks and sent to the API in real-time
 - **Speech-to-Text** — Local transcription via [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) (free, fully offline)
-- **AI Analysis** — Processes transcripts with a local Qwen2.5-7B model (via llama-cpp-python) to extract:
+- **AI Analysis** — Processes transcripts with a local LLM to extract:
   - Technical meeting summary
   - Action items with responsible people
   - Key decisions made
   - Pending questions / follow-ups
-- **Web Dashboard** — React SPA to record meetings, browse history, and view analysis results
+- **Swappable Models** — Change Whisper and LLM models from the web UI at runtime. Supports:
+  - Built-in GGUF models (via llama-cpp-python)
+  - Ollama (auto-detects installed models)
+  - Any OpenAI-compatible endpoint (LM Studio, vLLM, LocalAI, etc.)
+- **Web Dashboard** — React SPA to record meetings, browse history, view analysis, and configure models
 - **Fully Offline** — No external API calls; all processing happens on your machine
 
 ## Architecture
@@ -46,7 +50,7 @@ AI-powered meeting assistant that captures audio from microphone or system audio
 | -------------- | --------------------------------------------- |
 | Backend API    | ASP.NET Core (.NET 9, C#)                     |
 | Transcription  | Faster Whisper (Python subprocess)            |
-| AI Analysis    | Qwen2.5-7B-Instruct GGUF via llama-cpp-python |
+| AI Analysis    | Any local LLM — GGUF (llama-cpp-python), Ollama, or OpenAI-compatible |
 | Audio Recorder | Python (sounddevice, WASAPI loopback)         |
 | Frontend       | React 19 + TypeScript + Vite                  |
 | Storage        | JSON files (file-based store)                 |
@@ -156,6 +160,11 @@ python -m recorder.record --chunk-duration 30          # 30s chunks
 | `POST`   | `/api/meetings/{id}/finalize` | Finalize and trigger analysis               |
 | `DELETE` | `/api/meetings/{id}`          | Delete a meeting                            |
 | `GET`    | `/api/models/status`          | Check Whisper & LLM model availability      |
+| `GET`    | `/api/models/settings`        | Get current model configuration             |
+| `PUT`    | `/api/models/settings`        | Update models (takes effect immediately)    |
+| `GET`    | `/api/models/whisper/available` | List available Whisper model options       |
+| `GET`    | `/api/models/analyzer/available` | Scan local GGUF models on disk            |
+| `GET`    | `/api/models/ollama/available` | List Ollama models (if running)            |
 | `GET`    | `/health`                     | Health check                                |
 
 ## Project Status
@@ -170,6 +179,8 @@ python -m recorder.record --chunk-duration 30          # 30s chunks
 - [x] React frontend with recording and browsing
 - [x] Local LLM analysis (Qwen2.5-7B GGUF)
 - [x] Model status dashboard (Whisper + LLM availability check)
+- [x] Runtime model switching from web UI (Whisper + LLM)
+- [x] Multi-provider support (GGUF, Ollama, OpenAI-compatible)
 - [ ] Speaker diarization (who said what)
 - [ ] Real-time transcript streaming via WebSocket
 - [ ] Export to Markdown / PDF

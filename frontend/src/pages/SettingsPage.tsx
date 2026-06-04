@@ -13,7 +13,9 @@ import {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<ModelSettings | null>(null);
-  const [whisperOptions, setWhisperOptions] = useState<WhisperModelOption[]>([]);
+  const [whisperOptions, setWhisperOptions] = useState<WhisperModelOption[]>(
+    [],
+  );
   const [ggufModels, setGgufModels] = useState<LocalGgufModel[]>([]);
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([]);
   const [ollamaAvailable, setOllamaAvailable] = useState(false);
@@ -84,7 +86,8 @@ export default function SettingsPage() {
     <div className="page">
       <h1>Model Settings</h1>
       <p style={{ color: "var(--text-muted)", marginBottom: 24 }}>
-        Change which AI models are used for transcription and analysis. Changes take effect on the next meeting processed.
+        Change which AI models are used for transcription and analysis. Changes
+        take effect on the next meeting processed.
       </p>
 
       {/* Whisper Section */}
@@ -96,7 +99,9 @@ export default function SettingsPage() {
           <select
             className="settings-select"
             value={settings.whisperModel}
-            onChange={(e) => setSettings({ ...settings, whisperModel: e.target.value })}
+            onChange={(e) =>
+              setSettings({ ...settings, whisperModel: e.target.value })
+            }
           >
             {whisperOptions.map((m) => (
               <option key={m.id} value={m.id}>
@@ -111,7 +116,9 @@ export default function SettingsPage() {
           <select
             className="settings-select"
             value={settings.whisperDevice}
-            onChange={(e) => setSettings({ ...settings, whisperDevice: e.target.value })}
+            onChange={(e) =>
+              setSettings({ ...settings, whisperDevice: e.target.value })
+            }
           >
             <option value="cpu">CPU</option>
             <option value="cuda">CUDA (GPU)</option>
@@ -128,11 +135,15 @@ export default function SettingsPage() {
           <select
             className="settings-select"
             value={settings.analyzerProvider}
-            onChange={(e) => setSettings({ ...settings, analyzerProvider: e.target.value })}
+            onChange={(e) =>
+              setSettings({ ...settings, analyzerProvider: e.target.value })
+            }
           >
             <option value="builtin">Built-in (llama-cpp-python / GGUF)</option>
             <option value="ollama">Ollama</option>
-            <option value="openai-compatible">OpenAI-Compatible Endpoint</option>
+            <option value="openai-compatible">
+              OpenAI-Compatible Endpoint
+            </option>
           </select>
         </label>
 
@@ -143,16 +154,23 @@ export default function SettingsPage() {
               Model Source
               <select
                 className="settings-select"
-                value={settings.analyzerLocalModelPath ? "local" : "huggingface"}
+                value={
+                  settings.analyzerLocalModelPath ? "local" : "huggingface"
+                }
                 onChange={(e) => {
                   if (e.target.value === "huggingface") {
                     setSettings({ ...settings, analyzerLocalModelPath: "" });
                   } else {
-                    setSettings({ ...settings, analyzerLocalModelPath: ggufModels[0]?.path || "" });
+                    setSettings({
+                      ...settings,
+                      analyzerLocalModelPath: ggufModels[0]?.path || "",
+                    });
                   }
                 }}
               >
-                <option value="huggingface">HuggingFace (download by repo)</option>
+                <option value="huggingface">
+                  HuggingFace (download by repo)
+                </option>
                 <option value="local">Local GGUF file</option>
               </select>
             </label>
@@ -165,7 +183,12 @@ export default function SettingsPage() {
                     className="settings-input"
                     type="text"
                     value={settings.analyzerModelRepo}
-                    onChange={(e) => setSettings({ ...settings, analyzerModelRepo: e.target.value })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        analyzerModelRepo: e.target.value,
+                      })
+                    }
                     placeholder="Qwen/Qwen2.5-7B-Instruct-GGUF"
                   />
                 </label>
@@ -175,39 +198,56 @@ export default function SettingsPage() {
                     className="settings-input"
                     type="text"
                     value={settings.analyzerModelFile}
-                    onChange={(e) => setSettings({ ...settings, analyzerModelFile: e.target.value })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        analyzerModelFile: e.target.value,
+                      })
+                    }
                     placeholder="qwen2.5-7b-instruct-q3_k_m.gguf"
                   />
                 </label>
               </>
             )}
 
-            {settings.analyzerLocalModelPath !== undefined && settings.analyzerLocalModelPath !== "" && (
-              <label className="settings-label">
-                Local GGUF File
-                {ggufModels.length > 0 ? (
-                  <select
-                    className="settings-select"
-                    value={settings.analyzerLocalModelPath}
-                    onChange={(e) => setSettings({ ...settings, analyzerLocalModelPath: e.target.value })}
-                  >
-                    {ggufModels.map((m) => (
-                      <option key={m.path} value={m.path}>
-                        {m.filename} ({m.sizeGb} GB){m.repo ? ` — ${m.repo}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    className="settings-input"
-                    type="text"
-                    value={settings.analyzerLocalModelPath}
-                    onChange={(e) => setSettings({ ...settings, analyzerLocalModelPath: e.target.value })}
-                    placeholder="C:\Users\you\models\model.gguf"
-                  />
-                )}
-              </label>
-            )}
+            {settings.analyzerLocalModelPath !== undefined &&
+              settings.analyzerLocalModelPath !== "" && (
+                <label className="settings-label">
+                  Local GGUF File
+                  {ggufModels.length > 0 ? (
+                    <select
+                      className="settings-select"
+                      value={settings.analyzerLocalModelPath}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          analyzerLocalModelPath: e.target.value,
+                        })
+                      }
+                    >
+                      {ggufModels.map((m) => (
+                        <option key={m.path} value={m.path}>
+                          {m.filename} ({m.sizeGb} GB)
+                          {m.repo ? ` — ${m.repo}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className="settings-input"
+                      type="text"
+                      value={settings.analyzerLocalModelPath}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          analyzerLocalModelPath: e.target.value,
+                        })
+                      }
+                      placeholder="C:\Users\you\models\model.gguf"
+                    />
+                  )}
+                </label>
+              )}
           </>
         )}
 
@@ -225,7 +265,13 @@ export default function SettingsPage() {
                 <select
                   className="settings-select"
                   value={settings.ollamaModel}
-                  onChange={(e) => setSettings({ ...settings, ollamaModel: e.target.value, analyzerEndpoint: "http://localhost:11434/v1" })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      ollamaModel: e.target.value,
+                      analyzerEndpoint: "http://localhost:11434/v1",
+                    })
+                  }
                 >
                   <option value="">Select a model...</option>
                   {ollamaModels.map((m) => (
@@ -239,7 +285,9 @@ export default function SettingsPage() {
                   className="settings-input"
                   type="text"
                   value={settings.ollamaModel}
-                  onChange={(e) => setSettings({ ...settings, ollamaModel: e.target.value })}
+                  onChange={(e) =>
+                    setSettings({ ...settings, ollamaModel: e.target.value })
+                  }
                   placeholder="qwen2.5:7b"
                 />
               )}
@@ -256,7 +304,9 @@ export default function SettingsPage() {
                 className="settings-input"
                 type="text"
                 value={settings.analyzerEndpoint}
-                onChange={(e) => setSettings({ ...settings, analyzerEndpoint: e.target.value })}
+                onChange={(e) =>
+                  setSettings({ ...settings, analyzerEndpoint: e.target.value })
+                }
                 placeholder="http://localhost:1234/v1"
               />
             </label>
@@ -266,7 +316,9 @@ export default function SettingsPage() {
                 className="settings-input"
                 type="text"
                 value={settings.ollamaModel}
-                onChange={(e) => setSettings({ ...settings, ollamaModel: e.target.value })}
+                onChange={(e) =>
+                  setSettings({ ...settings, ollamaModel: e.target.value })
+                }
                 placeholder="model-name"
               />
             </label>
@@ -276,7 +328,11 @@ export default function SettingsPage() {
 
       {/* Save */}
       <div className="settings-actions">
-        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
           {saving ? "Saving..." : "Save Settings"}
         </button>
         {saved && <span className="settings-saved">Settings saved!</span>}

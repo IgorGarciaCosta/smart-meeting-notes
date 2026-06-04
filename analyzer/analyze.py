@@ -161,14 +161,22 @@ def analyze_transcript_openai(transcript: str, endpoint: str, model: str) -> dic
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Analyze meeting transcripts with local LLMs")
-    parser.add_argument("--json", dest="json_mode", action="store_true", help="Output JSON")
-    parser.add_argument("source", nargs="?", help="Transcript file path or '-' for stdin")
-    parser.add_argument("repo", nargs="?", default=DEFAULT_REPO, help="HuggingFace repo ID")
-    parser.add_argument("filename", nargs="?", default=DEFAULT_FILE, help="GGUF filename in repo")
-    parser.add_argument("--local", dest="local_path", help="Path to a local GGUF model file")
-    parser.add_argument("--openai-endpoint", dest="openai_endpoint", help="OpenAI-compatible endpoint URL")
-    parser.add_argument("--openai-model", dest="openai_model", default="", help="Model name for OpenAI-compatible endpoint")
+    parser = argparse.ArgumentParser(
+        description="Analyze meeting transcripts with local LLMs")
+    parser.add_argument("--json", dest="json_mode",
+                        action="store_true", help="Output JSON")
+    parser.add_argument("source", nargs="?",
+                        help="Transcript file path or '-' for stdin")
+    parser.add_argument("repo", nargs="?",
+                        default=DEFAULT_REPO, help="HuggingFace repo ID")
+    parser.add_argument("filename", nargs="?",
+                        default=DEFAULT_FILE, help="GGUF filename in repo")
+    parser.add_argument("--local", dest="local_path",
+                        help="Path to a local GGUF model file")
+    parser.add_argument("--openai-endpoint", dest="openai_endpoint",
+                        help="OpenAI-compatible endpoint URL")
+    parser.add_argument("--openai-model", dest="openai_model",
+                        default="", help="Model name for OpenAI-compatible endpoint")
 
     args = parser.parse_args()
 
@@ -177,7 +185,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if not args.source:
-        print("Error: --json requires <transcript_file> or '-' for stdin", file=sys.stderr)
+        print("Error: --json requires <transcript_file> or '-' for stdin",
+              file=sys.stderr)
         sys.exit(1)
 
     # Read transcript
@@ -186,17 +195,20 @@ if __name__ == "__main__":
     else:
         transcript_path = Path(args.source)
         if not transcript_path.exists():
-            print(json.dumps({"error": f"File not found: {args.source}"}), file=sys.stderr)
+            print(json.dumps(
+                {"error": f"File not found: {args.source}"}), file=sys.stderr)
             sys.exit(1)
         transcript_text = transcript_path.read_text(encoding="utf-8")
 
     try:
         if args.openai_endpoint:
-            result = analyze_transcript_openai(transcript_text, args.openai_endpoint, args.openai_model)
+            result = analyze_transcript_openai(
+                transcript_text, args.openai_endpoint, args.openai_model)
         elif args.local_path:
             result = analyze_transcript_local(transcript_text, args.local_path)
         else:
-            result = analyze_transcript(transcript_text, args.repo, args.filename)
+            result = analyze_transcript(
+                transcript_text, args.repo, args.filename)
         print(json.dumps(result, ensure_ascii=False))
     except Exception as e:
         print(json.dumps({"error": str(e)}), file=sys.stderr)
