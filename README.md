@@ -46,15 +46,15 @@ AI-powered meeting assistant that captures audio from microphone or system audio
 
 ## Tech Stack
 
-| Component      | Technology                                    |
-| -------------- | --------------------------------------------- |
-| Backend API    | ASP.NET Core (.NET 9, C#)                     |
-| Transcription  | Faster Whisper (Python subprocess)            |
+| Component      | Technology                                                            |
+| -------------- | --------------------------------------------------------------------- |
+| Backend API    | ASP.NET Core (.NET 9, C#)                                             |
+| Transcription  | Faster Whisper (Python subprocess)                                    |
 | AI Analysis    | Any local LLM — GGUF (llama-cpp-python), Ollama, or OpenAI-compatible |
-| Audio Recorder | Python (sounddevice, WASAPI loopback)         |
-| Frontend       | React 19 + TypeScript + Vite                  |
-| Storage        | JSON files (file-based store)                 |
-| API Docs       | Swagger / OpenAPI                             |
+| Audio Recorder | Python (sounddevice, WASAPI loopback)                                 |
+| Frontend       | React 19 + TypeScript + Vite                                          |
+| Storage        | JSON files (file-based store)                                         |
+| API Docs       | Swagger / OpenAPI                                                     |
 
 ## Project Structure
 
@@ -150,22 +150,22 @@ python -m recorder.record --chunk-duration 30          # 30s chunks
 
 ## API Endpoints
 
-| Method   | Endpoint                      | Description                                 |
-| -------- | ----------------------------- | ------------------------------------------- |
-| `GET`    | `/api/meetings`               | List all meetings                           |
-| `GET`    | `/api/meetings/{id}`          | Get meeting details (transcript + analysis) |
-| `POST`   | `/api/meetings`               | Create a new meeting                        |
-| `POST`   | `/api/meetings/{id}/chunks`   | Upload an audio chunk                       |
-| `GET`    | `/api/meetings/{id}/chunks`   | Get chunk status for a meeting              |
-| `POST`   | `/api/meetings/{id}/finalize` | Finalize and trigger analysis               |
-| `DELETE` | `/api/meetings/{id}`          | Delete a meeting                            |
-| `GET`    | `/api/models/status`          | Check Whisper & LLM model availability      |
-| `GET`    | `/api/models/settings`        | Get current model configuration             |
-| `PUT`    | `/api/models/settings`        | Update models (takes effect immediately)    |
-| `GET`    | `/api/models/whisper/available` | List available Whisper model options       |
-| `GET`    | `/api/models/analyzer/available` | Scan local GGUF models on disk            |
-| `GET`    | `/api/models/ollama/available` | List Ollama models (if running)            |
-| `GET`    | `/health`                     | Health check                                |
+| Method   | Endpoint                         | Description                                 |
+| -------- | -------------------------------- | ------------------------------------------- |
+| `GET`    | `/api/meetings`                  | List all meetings                           |
+| `GET`    | `/api/meetings/{id}`             | Get meeting details (transcript + analysis) |
+| `POST`   | `/api/meetings`                  | Create a new meeting                        |
+| `POST`   | `/api/meetings/{id}/chunks`      | Upload an audio chunk                       |
+| `GET`    | `/api/meetings/{id}/chunks`      | Get chunk status for a meeting              |
+| `POST`   | `/api/meetings/{id}/finalize`    | Finalize and trigger analysis               |
+| `DELETE` | `/api/meetings/{id}`             | Delete a meeting                            |
+| `GET`    | `/api/models/status`             | Check Whisper & LLM model availability      |
+| `GET`    | `/api/models/settings`           | Get current model configuration             |
+| `PUT`    | `/api/models/settings`           | Update models (takes effect immediately)    |
+| `GET`    | `/api/models/whisper/available`  | List available Whisper model options        |
+| `GET`    | `/api/models/analyzer/available` | Scan local GGUF models on disk              |
+| `GET`    | `/api/models/ollama/available`   | List Ollama models (if running)             |
+| `GET`    | `/health`                        | Health check                                |
 
 ## Project Status
 
