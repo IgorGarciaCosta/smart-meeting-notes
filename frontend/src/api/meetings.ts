@@ -1,6 +1,7 @@
 import type { Meeting, MeetingUploadResponse } from "./types.ts";
 
-const BASE = "/api/meetings";
+const API_BASE = import.meta.env.VITE_API_URL || "";
+const BASE = `${API_BASE}/api/meetings`;
 
 export async function createMeeting(title: string): Promise<MeetingUploadResponse> {
   const res = await fetch(BASE, {
@@ -63,7 +64,7 @@ export interface ModelStatus {
 }
 
 export async function getModelsStatus(): Promise<ModelStatus[]> {
-  const res = await fetch("/api/models/status");
+  const res = await fetch(`${API_BASE}/api/models/status`);
   if (!res.ok) throw new Error(`Failed to check models: ${res.statusText}`);
   return res.json();
 }
@@ -82,13 +83,13 @@ export interface ModelSettings {
 }
 
 export async function getModelSettings(): Promise<ModelSettings> {
-  const res = await fetch("/api/models/settings");
+  const res = await fetch(`${API_BASE}/api/models/settings`);
   if (!res.ok) throw new Error(`Failed to get settings: ${res.statusText}`);
   return res.json();
 }
 
 export async function updateModelSettings(settings: Partial<ModelSettings>): Promise<ModelSettings> {
-  const res = await fetch("/api/models/settings", {
+  const res = await fetch(`${API_BASE}/api/models/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(settings),
@@ -106,7 +107,7 @@ export interface WhisperModelOption {
 }
 
 export async function getWhisperModels(): Promise<WhisperModelOption[]> {
-  const res = await fetch("/api/models/whisper/available");
+  const res = await fetch(`${API_BASE}/api/models/whisper/available`);
   if (!res.ok) throw new Error(`Failed to get whisper models: ${res.statusText}`);
   return res.json();
 }
@@ -120,7 +121,7 @@ export interface LocalGgufModel {
 }
 
 export async function getAnalyzerModels(): Promise<{ models: LocalGgufModel[]; count: number }> {
-  const res = await fetch("/api/models/analyzer/available");
+  const res = await fetch(`${API_BASE}/api/models/analyzer/available`);
   if (!res.ok) throw new Error(`Failed to get analyzer models: ${res.statusText}`);
   return res.json();
 }
@@ -132,7 +133,7 @@ export interface OllamaModel {
 }
 
 export async function getOllamaModels(): Promise<{ available: boolean; models: { models?: OllamaModel[] }; reason?: string }> {
-  const res = await fetch("/api/models/ollama/available");
+  const res = await fetch(`${API_BASE}/api/models/ollama/available`);
   if (!res.ok) throw new Error(`Failed to get ollama models: ${res.statusText}`);
   return res.json();
 }
