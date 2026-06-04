@@ -94,7 +94,10 @@ export default function RecordPage() {
         await new Promise((r) => setTimeout(r, 5000));
         try {
           const result = await finalizeMeeting(meetingId);
-          if (result.status === MeetingStatus.Finalizing || result.status === MeetingStatus.AwaitingChunks) {
+          if (
+            result.status === MeetingStatus.Finalizing ||
+            result.status === MeetingStatus.AwaitingChunks
+          ) {
             setStatus(`Waiting for transcription... (${i + 1}/${maxAttempts})`);
             continue;
           }
@@ -139,9 +142,7 @@ export default function RecordPage() {
             return;
           }
           if (meeting.status === "Failed") {
-            setStatus(
-              `Analysis error: ${meeting.errorMessage || "unknown"}`,
-            );
+            setStatus(`Analysis error: ${meeting.errorMessage || "unknown"}`);
             setFinalizing(false);
             return;
           }
