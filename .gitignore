@@ -21,8 +21,8 @@ node_modules/
 *.ogg
 *.flac
 
-# Whisper model cache
-models/
+# Whisper model cache (root only, not src/**/Models/)
+/models/
 
 # IDE
 .idea/
