@@ -81,4 +81,22 @@ public class JsonMeetingStore : IMeetingStore
             _lock.Release();
         }
     }
+
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        var filePath = Path.Combine(_basePath, $"{id}.json");
+        if (!File.Exists(filePath))
+            return false;
+
+        await _lock.WaitAsync();
+        try
+        {
+            File.Delete(filePath);
+            return true;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
 }

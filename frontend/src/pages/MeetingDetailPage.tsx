@@ -6,11 +6,11 @@ import { MeetingStatus, ChunkStatus } from "../api/types.ts";
 
 function statusBadge(status: MeetingStatus) {
   const map: Record<string, { cls: string; label: string }> = {
-    [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Aguardando" },
-    [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizando" },
-    [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analisando" },
-    [MeetingStatus.Completed]: { cls: "badge--success", label: "Concluída" },
-    [MeetingStatus.Failed]: { cls: "badge--danger", label: "Falhou" },
+    [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Waiting" },
+    [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizing" },
+    [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analyzing" },
+    [MeetingStatus.Completed]: { cls: "badge--success", label: "Completed" },
+    [MeetingStatus.Failed]: { cls: "badge--danger", label: "Failed" },
   };
   const info = map[status] || { cls: "badge--neutral", label: status };
   return (
@@ -50,7 +50,7 @@ export default function MeetingDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="loading">Carregando...</div>;
+  if (loading) return <div className="loading">Loading...</div>;
   if (error)
     return (
       <div className="page">
@@ -64,7 +64,7 @@ export default function MeetingDetailPage() {
     return (
       <div className="page">
         <div className="empty-state">
-          <p>Reunião não encontrada.</p>
+          <p>Meeting not found.</p>
         </div>
       </div>
     );
@@ -72,7 +72,7 @@ export default function MeetingDetailPage() {
   return (
     <div className="page">
       <Link to="/meetings" className="back-link">
-        ← Voltar para reuniões
+        ← Back to meetings
       </Link>
 
       <div className="page-header">
@@ -82,7 +82,7 @@ export default function MeetingDetailPage() {
       <div className="detail-meta">
         {statusBadge(meeting.status)}
         <span className="detail-meta-item">
-          {new Date(meeting.uploadedAt).toLocaleString("pt-BR")}
+          {new Date(meeting.uploadedAt).toLocaleString("en-US")}
         </span>
         {meeting.chunks.length > 0 && (
           <span className="detail-meta-item">
@@ -95,7 +95,7 @@ export default function MeetingDetailPage() {
         <div className="alert alert--error">
           <span>✕</span>
           <span>
-            <strong>Erro:</strong> {meeting.errorMessage}
+            <strong>Error:</strong> {meeting.errorMessage}
           </span>
         </div>
       )}
@@ -127,7 +127,7 @@ export default function MeetingDetailPage() {
 
       {meeting.transcript && (
         <div className="detail-section">
-          <h2>Transcrição</h2>
+          <h2>Transcript</h2>
           <p
             style={{
               fontSize: 12,
@@ -135,7 +135,7 @@ export default function MeetingDetailPage() {
               marginBottom: 12,
             }}
           >
-            Idioma detectado: {meeting.transcript.language}
+            Detected language: {meeting.transcript.language}
           </p>
           <div className="transcript-box">{meeting.transcript.text}</div>
         </div>
@@ -143,16 +143,16 @@ export default function MeetingDetailPage() {
 
       {meeting.analysis && (
         <div className="detail-section">
-          <h2>Análise</h2>
+          <h2>Analysis</h2>
 
-          <h3>Resumo</h3>
+          <h3>Summary</h3>
           <p style={{ color: "var(--text-primary)", lineHeight: 1.7 }}>
             {meeting.analysis.summary}
           </p>
 
           {meeting.analysis.actionItems.length > 0 && (
             <>
-              <h3>Ações</h3>
+              <h3>Action Items</h3>
               <ul className="analysis-list">
                 {meeting.analysis.actionItems.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -163,7 +163,7 @@ export default function MeetingDetailPage() {
 
           {meeting.analysis.decisions.length > 0 && (
             <>
-              <h3>Decisões</h3>
+              <h3>Decisions</h3>
               <ul className="analysis-list">
                 {meeting.analysis.decisions.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -174,7 +174,7 @@ export default function MeetingDetailPage() {
 
           {meeting.analysis.pendingQuestions.length > 0 && (
             <>
-              <h3>Questões Pendentes</h3>
+              <h3>Pending Questions</h3>
               <ul className="analysis-list">
                 {meeting.analysis.pendingQuestions.map((item, i) => (
                   <li key={i}>{item}</li>

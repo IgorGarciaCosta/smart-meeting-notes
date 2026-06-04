@@ -3,8 +3,8 @@ import { getModelsStatus, type ModelStatus } from "../api/meetings.ts";
 
 const MODEL_DESCRIPTIONS: Record<string, string> = {
   Whisper:
-    "Modelo de transcrição de áudio (speech-to-text). Converte o áudio da reunião em texto.",
-  Qwen: "Modelo de análise de texto (LLM). Gera resumo, ações e decisões a partir da transcrição.",
+    "Audio transcription model (speech-to-text). Converts meeting audio into text.",
+  Qwen: "Text analysis model (LLM). Generates summary, actions, and decisions from the transcript.",
 };
 
 export default function ModelStatusPanel() {
@@ -22,10 +22,10 @@ export default function ModelStatusPanel() {
     return (
       <div className="card models-panel">
         <div className="models-panel-header">
-          <span className="card-title">Modelos de IA</span>
+          <span className="card-title">AI Models</span>
         </div>
         <p className="models-error">
-          Não foi possível verificar os modelos. O servidor está rodando?
+          Could not check models. Is the server running?
         </p>
       </div>
     );
@@ -35,10 +35,10 @@ export default function ModelStatusPanel() {
     return (
       <div className="card models-panel">
         <div className="models-panel-header">
-          <span className="card-title">Modelos de IA</span>
+          <span className="card-title">AI Models</span>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-          Verificando modelos...
+          Checking models...
         </p>
       </div>
     );
@@ -47,7 +47,7 @@ export default function ModelStatusPanel() {
   return (
     <div className="card models-panel">
       <div className="models-panel-header">
-        <span className="card-title">Modelos de IA</span>
+        <span className="card-title">AI Models</span>
         <div
           className="models-info-icon"
           onMouseEnter={() => setShowTooltip(true)}

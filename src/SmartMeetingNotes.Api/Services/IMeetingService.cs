@@ -13,4 +13,5 @@ public interface IMeetingService
     Task<ChunkUploadResult> UploadChunkAsync(Guid meetingId, IFormFile audio, int chunkIndex);
     Task<List<AudioChunk>> GetChunksAsync(Guid meetingId);
     Task<FinalizeResult> FinalizeMeetingAsync(Guid meetingId);
+    Task<bool> DeleteMeetingAsync(Guid id);
 }

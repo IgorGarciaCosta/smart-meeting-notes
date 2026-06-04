@@ -116,4 +116,19 @@ public class MeetingsController : ControllerBase
             _ => BadRequest(result.Response),
         };
     }
+
+    /// <summary>
+    /// Delete a meeting and its associated audio files.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var deleted = await _meetingService.DeleteMeetingAsync(id);
+        if (!deleted)
+            return NotFound(new { error = $"Meeting {id} not found" });
+
+        return NoContent();
+    }
 }

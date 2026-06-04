@@ -28,6 +28,20 @@ public class MeetingService : IMeetingService
 
     public Task<Meeting?> GetMeetingAsync(Guid id) => _store.GetAsync(id);
 
+    public async Task<bool> DeleteMeetingAsync(Guid id)
+    {
+        var meeting = await _store.GetAsync(id);
+        if (meeting == null) return false;
+
+        // Delete associated audio files
+        var audioPath = _configuration.GetValue<string>("DataPaths:Audio") ?? "data/audio";
+        var meetingAudioDir = Path.Combine(audioPath, id.ToString());
+        if (Directory.Exists(meetingAudioDir))
+            Directory.Delete(meetingAudioDir, true);
+
+        return await _store.DeleteAsync(id);
+    }
+
     public Task<List<Meeting>> GetAllMeetingsAsync() => _store.GetAllAsync();
 
     public async Task<Meeting> CreateMeetingAsync(CreateMeetingRequest request)

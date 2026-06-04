@@ -55,13 +55,13 @@ export default function App() {
           end
           className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
         >
-          Gravar
+          Record
         </NavLink>
         <NavLink
           to="/meetings"
           className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
         >
-          Reuniões
+          Meetings
         </NavLink>
       </nav>
 

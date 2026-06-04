@@ -36,7 +36,7 @@ export default function RecordPage() {
         await uploadChunk(meetingId, index, blob, `chunk_${index}.webm`);
         setChunksUploaded((c) => c + 1);
       } catch (e) {
-        setStatus(`Erro no upload do chunk ${index}: ${e}`);
+        setStatus(`Chunk ${index} upload error: ${e}`);
       }
     },
     [meetingId],
@@ -48,11 +48,11 @@ export default function RecordPage() {
 
   const handleStart = async () => {
     if (!selectedDevice) {
-      setStatus("Selecione um dispositivo de áudio");
+      setStatus("Select an audio device");
       return;
     }
 
-    setStatus("Criando reunião...");
+    setStatus("Creating meeting...");
     try {
       const res = await createMeeting(title || "Untitled Meeting");
       setMeetingId(res.meetingId);
@@ -70,7 +70,7 @@ export default function RecordPage() {
         setElapsed((e) => e + 1);
       }, 1000);
     } catch (e) {
-      setStatus(`Erro ao iniciar: ${e}`);
+      setStatus(`Error starting: ${e}`);
     }
   };
 
@@ -85,7 +85,7 @@ export default function RecordPage() {
     if (!meetingId) return;
 
     setFinalizing(true);
-    setStatus("Aguardando transcrição dos chunks para finalizar...");
+    setStatus("Waiting for chunk transcription to finalize...");
 
     const pollAndFinalize = async () => {
       const maxAttempts = 60;
@@ -94,11 +94,11 @@ export default function RecordPage() {
         try {
           const result = await finalizeMeeting(meetingId);
           if (result.status === "pending") {
-            setStatus(`Aguardando transcrição... (${i + 1}/${maxAttempts})`);
+            setStatus(`Waiting for transcription... (${i + 1}/${maxAttempts})`);
             continue;
           }
           // Finalize accepted — now poll until analysis completes
-          setStatus("Análise em andamento...");
+          setStatus("Analysis in progress...");
           break;
         } catch (e) {
           const msg = String(e);
@@ -114,10 +114,10 @@ export default function RecordPage() {
               msg.includes("Analyzing") ||
               msg.includes("Completed")
             ) {
-              setStatus("Análise em andamento...");
+              setStatus("Analysis in progress...");
               break;
             }
-            setStatus(`Erro: ${msg}`);
+            setStatus(`Error: ${msg}`);
             setFinalizing(false);
             return;
           }
@@ -133,25 +133,25 @@ export default function RecordPage() {
         try {
           const meeting = await getMeeting(meetingId);
           if (meeting.status === "Completed") {
-            setStatus("Reunião finalizada e análise concluída!");
+            setStatus("Meeting finalized and analysis complete!");
             setFinalizing(false);
             return;
           }
           if (meeting.status === "Failed") {
             setStatus(
-              `Erro na análise: ${meeting.errorMessage || "desconhecido"}`,
+              `Analysis error: ${meeting.errorMessage || "unknown"}`,
             );
             setFinalizing(false);
             return;
           }
-          setStatus(`Análise em andamento... (${i + 1}/${maxAttempts})`);
+          setStatus(`Analysis in progress... (${i + 1}/${maxAttempts})`);
         } catch (e) {
-          setStatus(`Erro ao verificar status: ${e}`);
+          setStatus(`Error checking status: ${e}`);
           setFinalizing(false);
           return;
         }
       }
-      setStatus("Timeout — verifique o status da reunião manualmente.");
+      setStatus("Timeout — check the meeting status manually.");
       setFinalizing(false);
     };
 
@@ -171,8 +171,8 @@ export default function RecordPage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Nova Gravação</h1>
-        <p>Configure o dispositivo e inicie a captura de áudio da reunião.</p>
+        <h1>New Recording</h1>
+        <p>Configure the device and start capturing the meeting audio.</p>
       </div>
 
       <ModelStatusPanel />
@@ -181,17 +181,16 @@ export default function RecordPage() {
         <div className="alert alert--warning">
           <span>⚠️</span>
           <div>
-            <strong>Permissão necessária</strong>
+            <strong>Permission required</strong>
             <p style={{ marginTop: 4 }}>
-              Autorize o acesso ao microfone para listar os dispositivos
-              disponíveis.
+              Allow microphone access to list available devices.
             </p>
             <button
               className="btn btn--primary"
               style={{ marginTop: 12 }}
               onClick={recorder.requestPermission}
             >
-              Autorizar Microfone
+              Allow Microphone
             </button>
           </div>
         </div>
@@ -206,11 +205,11 @@ export default function RecordPage() {
 
       <div className="card">
         <div className="card-header">
-          <span className="card-title">Configurações</span>
+          <span className="card-title">Settings</span>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Dispositivo de Áudio</label>
+          <label className="form-label">Audio Device</label>
           <select
             className="form-select"
             value={selectedDevice}
@@ -218,7 +217,7 @@ export default function RecordPage() {
             disabled={recorder.isRecording}
           >
             {recorder.devices.length === 0 && (
-              <option value="">Nenhum dispositivo encontrado</option>
+              <option value="">No device found</option>
             )}
             {recorder.devices.map((d) => (
               <option key={d.deviceId} value={d.deviceId}>
@@ -230,7 +229,7 @@ export default function RecordPage() {
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Título da Reunião</label>
+            <label className="form-label">Meeting Title</label>
             <input
               className="form-input"
               type="text"
@@ -272,7 +271,7 @@ export default function RecordPage() {
                 onChange={(e) => setCaptureSystemAudio(e.target.checked)}
                 disabled={recorder.isRecording}
               />
-              Capturar áudio do sistema (mic + som da máquina)
+              Capture system audio (mic + system sound)
             </label>
             {captureSystemAudio && (
               <p
@@ -282,8 +281,7 @@ export default function RecordPage() {
                   margin: "4px 0 0 26px",
                 }}
               >
-                O navegador pedirá permissão para compartilhar o áudio do
-                sistema.
+                The browser will ask permission to share system audio.
               </p>
             )}
           </div>
@@ -297,7 +295,7 @@ export default function RecordPage() {
             onClick={recorder.isRecording ? handleStop : handleStart}
             disabled={finalizing}
           >
-            {recorder.isRecording ? "⏹  Parar Gravação" : "●  Iniciar Gravação"}
+            {recorder.isRecording ? "⏹  Stop Recording" : "●  Start Recording"}
           </button>
         </div>
       </div>
@@ -314,7 +312,7 @@ export default function RecordPage() {
           <div className="recording-stats">
             <div className="recording-stat">
               <div className="recording-stat-value">{chunksUploaded}</div>
-              <div className="recording-stat-label">Chunks enviados</div>
+              <div className="recording-stat-label">Chunks sent</div>
             </div>
             <div className="recording-stat">
               <div className="recording-stat-value">{chunkDuration}s</div>

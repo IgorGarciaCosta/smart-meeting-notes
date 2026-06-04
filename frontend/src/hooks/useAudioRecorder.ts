@@ -105,7 +105,7 @@ export function useAudioRecorder(opts: UseAudioRecorderOptions = {}): UseAudioRe
     };
 
     recorder.onerror = () => {
-      setError("Erro durante gravação");
+      setError("Error during recording");
       setIsRecording(false);
     };
 
@@ -138,7 +138,7 @@ export function useAudioRecorder(opts: UseAudioRecorderOptions = {}): UseAudioRe
           }, chunkDuration * 1000);
         })
         .catch((e) => {
-          setError(`Não foi possível iniciar gravação: ${e}`);
+          setError(`Could not start recording: ${e}`);
         });
     },
     [chunkDuration, startRecorder]
@@ -238,7 +238,7 @@ export function useAudioRecorder(opts: UseAudioRecorderOptions = {}): UseAudioRe
           });
         })
         .catch((e) => {
-          setError(`Não foi possível capturar áudio do sistema: ${e}`);
+          setError(`Could not capture system audio: ${e}`);
         });
     },
     [chunkDuration, startRecorder]

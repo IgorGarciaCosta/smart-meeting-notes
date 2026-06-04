@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getAllMeetings } from "../api/meetings.ts";
+import { getAllMeetings, deleteMeeting } from "../api/meetings.ts";
 import type { Meeting } from "../api/types.ts";
 import { MeetingStatus } from "../api/types.ts";
 
 function statusBadge(status: MeetingStatus) {
   const map: Record<string, { cls: string; label: string }> = {
-    [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Aguardando" },
-    [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizando" },
-    [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analisando" },
-    [MeetingStatus.Completed]: { cls: "badge--success", label: "Concluída" },
-    [MeetingStatus.Failed]: { cls: "badge--danger", label: "Falhou" },
+    [MeetingStatus.AwaitingChunks]: { cls: "badge--info", label: "Waiting" },
+    [MeetingStatus.Finalizing]: { cls: "badge--warning", label: "Finalizing" },
+    [MeetingStatus.Analyzing]: { cls: "badge--warning", label: "Analyzing" },
+    [MeetingStatus.Completed]: { cls: "badge--success", label: "Completed" },
+    [MeetingStatus.Failed]: { cls: "badge--danger", label: "Failed" },
   };
   const info = map[status] || { cls: "badge--neutral", label: status };
   return (
@@ -25,6 +25,8 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Meeting | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     getAllMeetings()
@@ -33,7 +35,21 @@ export default function MeetingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="loading">Carregando reuniões...</div>;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteMeeting(deleteTarget.id);
+      setMeetings((prev) => prev.filter((m) => m.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (loading) return <div className="loading">Loading meetings...</div>;
   if (error)
     return (
       <div className="page">
@@ -47,14 +63,14 @@ export default function MeetingsPage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Reuniões</h1>
-        <p>{meetings.length} reunião(ões) registrada(s)</p>
+        <h1>Meetings</h1>
+        <p>{meetings.length} meeting(s) recorded</p>
       </div>
 
       {meetings.length === 0 ? (
         <div className="empty-state">
           <p style={{ fontSize: 32 }}>📭</p>
-          <p>Nenhuma reunião gravada ainda.</p>
+          <p>No meetings recorded yet.</p>
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -62,9 +78,10 @@ export default function MeetingsPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Título</th>
+                  <th>Title</th>
                   <th>Status</th>
-                  <th>Data</th>
+                  <th>Date</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -77,12 +94,63 @@ export default function MeetingsPage() {
                     </td>
                     <td>{statusBadge(m.status)}</td>
                     <td className="table-date">
-                      {new Date(m.uploadedAt).toLocaleString("pt-BR")}
+                      {new Date(m.uploadedAt).toLocaleString("en-US")}
+                    </td>
+                    <td>
+                      <button
+                        className="btn-icon btn-icon--danger"
+                        title="Delete meeting"
+                        onClick={() => setDeleteTarget(m)}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => !deleting && setDeleteTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Delete Meeting</h2>
+            <p>
+              Are you sure you want to delete <strong>{deleteTarget.title}</strong>? This action cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn btn--secondary"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn--danger"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}

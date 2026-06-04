@@ -7,4 +7,5 @@ public interface IMeetingStore
     Task SaveAsync(Meeting meeting);
     Task<Meeting?> GetAsync(Guid id);
     Task<List<Meeting>> GetAllAsync();
+    Task<bool> DeleteAsync(Guid id);
 }

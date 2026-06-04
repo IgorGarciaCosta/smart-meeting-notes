@@ -50,6 +50,11 @@ export async function getAllMeetings(): Promise<Meeting[]> {
   return res.json();
 }
 
+export async function deleteMeeting(meetingId: string): Promise<void> {
+  const res = await fetch(`${BASE}/${meetingId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete meeting: ${res.statusText}`);
+}
+
 export interface ModelStatus {
   name: string;
   model: string;
