@@ -57,13 +57,15 @@ AI-powered meeting assistant that captures audio from microphone or system audio
 ```
 smart-meeting-notes/
 ├── src/SmartMeetingNotes.Api/   # ASP.NET Core Web API
-│   ├── Controllers/             # REST endpoints
+│   ├── Controllers/             # REST endpoints (Meetings, Models)
 │   ├── Models/                  # DTOs and domain models
 │   ├── Services/                # Business logic, processing queues
+│   ├── Middleware/              # Request logging
 │   └── data/                    # JSON meeting store + audio files
 ├── frontend/                    # React SPA (Vite)
 │   └── src/
 │       ├── pages/               # RecordPage, MeetingsPage, MeetingDetailPage
+│       ├── components/          # ModelStatusPanel
 │       ├── api/                 # API client + types
 │       └── hooks/               # useAudioRecorder
 ├── recorder/                    # Python CLI audio recorder
@@ -150,8 +152,10 @@ python -m recorder.record --chunk-duration 30          # 30s chunks
 | `GET` | `/api/meetings/{id}` | Get meeting details (transcript + analysis) |
 | `POST` | `/api/meetings` | Create a new meeting |
 | `POST` | `/api/meetings/{id}/chunks` | Upload an audio chunk |
+| `GET` | `/api/meetings/{id}/chunks` | Get chunk status for a meeting |
 | `POST` | `/api/meetings/{id}/finalize` | Finalize and trigger analysis |
 | `DELETE` | `/api/meetings/{id}` | Delete a meeting |
+| `GET` | `/api/models/status` | Check Whisper & LLM model availability |
 | `GET` | `/health` | Health check |
 
 ## Project Status
@@ -165,16 +169,12 @@ python -m recorder.record --chunk-duration 30          # 30s chunks
 - [x] Python audio recorder (mic + system loopback + mixed)
 - [x] React frontend with recording and browsing
 - [x] Local LLM analysis (Qwen2.5-7B GGUF)
+- [x] Model status dashboard (Whisper + LLM availability check)
 - [ ] Speaker diarization (who said what)
 - [ ] Real-time transcript streaming via WebSocket
 - [ ] Export to Markdown / PDF
 - [ ] Jira / GitHub Issues integration
 - [ ] Multi-language UI
-- [ ] Integração com LLM para análise do transcript
-- [ ] Geração de resumo técnico estruturado
-- [ ] Criação automática de issues (GitHub/Jira)
-- [ ] Interface web para visualização dos resumos
-- [ ] Suporte a captura de áudio do Teams (system audio)
 
 ## License
 
