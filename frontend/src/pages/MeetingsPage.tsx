@@ -27,6 +27,8 @@ export default function MeetingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Meeting | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => {
     getAllMeetings()
@@ -46,6 +48,19 @@ export default function MeetingsPage() {
       setError(String(e));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      await Promise.all(meetings.map((m) => deleteMeeting(m.id)));
+      setMeetings([]);
+      setShowDeleteAll(false);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -73,6 +88,16 @@ export default function MeetingsPage() {
           <p>No meetings recorded yet.</p>
         </div>
       ) : (
+        <>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button
+            className="btn btn--danger"
+            style={{ padding: "8px 16px", fontSize: 13 }}
+            onClick={() => setShowDeleteAll(true)}
+          >
+            Delete All
+          </button>
+        </div>
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div className="table-wrapper">
             <table className="table">
@@ -123,6 +148,35 @@ export default function MeetingsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      </>
+      )}
+
+      {/* Delete All confirmation modal */}
+      {showDeleteAll && (
+        <div className="modal-overlay" onClick={() => !deletingAll && setShowDeleteAll(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Delete All Meetings</h2>
+            <p>
+              Are you sure you want to delete all <strong>{meetings.length}</strong> meetings? This action cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn btn--secondary"
+                onClick={() => setShowDeleteAll(false)}
+                disabled={deletingAll}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn--danger"
+                onClick={handleDeleteAll}
+                disabled={deletingAll}
+              >
+                {deletingAll ? "Deleting..." : "Delete All"}
+              </button>
+            </div>
           </div>
         </div>
       )}
