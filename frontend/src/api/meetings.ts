@@ -49,3 +49,16 @@ export async function getAllMeetings(): Promise<Meeting[]> {
   if (!res.ok) throw new Error(`Failed to list meetings: ${res.statusText}`);
   return res.json();
 }
+
+export interface ModelStatus {
+  name: string;
+  model: string;
+  available: boolean;
+  reason?: string;
+}
+
+export async function getModelsStatus(): Promise<ModelStatus[]> {
+  const res = await fetch("/api/models/status");
+  if (!res.ok) throw new Error(`Failed to check models: ${res.statusText}`);
+  return res.json();
+}

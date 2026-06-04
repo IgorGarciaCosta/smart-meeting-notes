@@ -6,6 +6,7 @@ import {
   finalizeMeeting,
   getMeeting,
 } from "../api/meetings.ts";
+import ModelStatusPanel from "../components/ModelStatusPanel.tsx";
 
 export default function RecordPage() {
   const [title, setTitle] = useState("");
@@ -173,6 +174,8 @@ export default function RecordPage() {
         <h1>Nova Gravação</h1>
         <p>Configure o dispositivo e inicie a captura de áudio da reunião.</p>
       </div>
+
+      <ModelStatusPanel />
 
       {!recorder.permissionGranted && (
         <div className="alert alert--warning">
