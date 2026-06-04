@@ -6,6 +6,7 @@ import {
   finalizeMeeting,
   getMeeting,
 } from "../api/meetings.ts";
+import { MeetingStatus } from "../api/types.ts";
 import ModelStatusPanel from "../components/ModelStatusPanel.tsx";
 
 export default function RecordPage() {
@@ -93,7 +94,7 @@ export default function RecordPage() {
         await new Promise((r) => setTimeout(r, 5000));
         try {
           const result = await finalizeMeeting(meetingId);
-          if (result.status === "pending") {
+          if (result.status === MeetingStatus.Finalizing || result.status === MeetingStatus.AwaitingChunks) {
             setStatus(`Waiting for transcription... (${i + 1}/${maxAttempts})`);
             continue;
           }
