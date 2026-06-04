@@ -8,6 +8,7 @@ import {
 import RecordPage from "./pages/RecordPage.tsx";
 import MeetingsPage from "./pages/MeetingsPage.tsx";
 import MeetingDetailPage from "./pages/MeetingDetailPage.tsx";
+import SettingsPage from "./pages/SettingsPage.tsx";
 
 function AppRoutes() {
   const location = useLocation();
@@ -24,6 +25,7 @@ function AppRoutes() {
         <Routes location={location}>
           <Route path="/meetings" element={<MeetingsPage />} />
           <Route path="/meetings/:id" element={<MeetingDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       )}
     </>
@@ -62,6 +64,12 @@ export default function App() {
           className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
         >
           Meetings
+        </NavLink>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+        >
+          Settings
         </NavLink>
       </nav>
 

@@ -67,3 +67,72 @@ export async function getModelsStatus(): Promise<ModelStatus[]> {
   if (!res.ok) throw new Error(`Failed to check models: ${res.statusText}`);
   return res.json();
 }
+
+// --- Model Settings API ---
+
+export interface ModelSettings {
+  whisperModel: string;
+  whisperDevice: string;
+  analyzerProvider: string;
+  analyzerEndpoint: string;
+  analyzerModelRepo: string;
+  analyzerModelFile: string;
+  analyzerLocalModelPath: string;
+  ollamaModel: string;
+}
+
+export async function getModelSettings(): Promise<ModelSettings> {
+  const res = await fetch("/api/models/settings");
+  if (!res.ok) throw new Error(`Failed to get settings: ${res.statusText}`);
+  return res.json();
+}
+
+export async function updateModelSettings(settings: Partial<ModelSettings>): Promise<ModelSettings> {
+  const res = await fetch("/api/models/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error(`Failed to update settings: ${res.statusText}`);
+  return res.json();
+}
+
+export interface WhisperModelOption {
+  id: string;
+  name: string;
+  quality: string;
+  speed: string;
+  notes: string;
+}
+
+export async function getWhisperModels(): Promise<WhisperModelOption[]> {
+  const res = await fetch("/api/models/whisper/available");
+  if (!res.ok) throw new Error(`Failed to get whisper models: ${res.statusText}`);
+  return res.json();
+}
+
+export interface LocalGgufModel {
+  path: string;
+  filename: string;
+  repo: string;
+  sizeGb: number;
+  source: string;
+}
+
+export async function getAnalyzerModels(): Promise<{ models: LocalGgufModel[]; count: number }> {
+  const res = await fetch("/api/models/analyzer/available");
+  if (!res.ok) throw new Error(`Failed to get analyzer models: ${res.statusText}`);
+  return res.json();
+}
+
+export interface OllamaModel {
+  name: string;
+  model: string;
+  size: number;
+}
+
+export async function getOllamaModels(): Promise<{ available: boolean; models: { models?: OllamaModel[] }; reason?: string }> {
+  const res = await fetch("/api/models/ollama/available");
+  if (!res.ok) throw new Error(`Failed to get ollama models: ${res.statusText}`);
+  return res.json();
+}

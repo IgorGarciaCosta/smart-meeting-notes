@@ -42,15 +42,15 @@ AI-powered meeting assistant that captures audio from microphone or system audio
 
 ## Tech Stack
 
-| Component | Technology |
-|---|---|
-| Backend API | ASP.NET Core (.NET 9, C#) |
-| Transcription | Faster Whisper (Python subprocess) |
-| AI Analysis | Qwen2.5-7B-Instruct GGUF via llama-cpp-python |
-| Audio Recorder | Python (sounddevice, WASAPI loopback) |
-| Frontend | React 19 + TypeScript + Vite |
-| Storage | JSON files (file-based store) |
-| API Docs | Swagger / OpenAPI |
+| Component      | Technology                                    |
+| -------------- | --------------------------------------------- |
+| Backend API    | ASP.NET Core (.NET 9, C#)                     |
+| Transcription  | Faster Whisper (Python subprocess)            |
+| AI Analysis    | Qwen2.5-7B-Instruct GGUF via llama-cpp-python |
+| Audio Recorder | Python (sounddevice, WASAPI loopback)         |
+| Frontend       | React 19 + TypeScript + Vite                  |
+| Storage        | JSON files (file-based store)                 |
+| API Docs       | Swagger / OpenAPI                             |
 
 ## Project Structure
 
@@ -84,12 +84,12 @@ smart-meeting-notes/
 
 The project uses [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) for transcription. Models are downloaded automatically on first use:
 
-| Model | PT-BR Quality | Speed | Recommendation |
-|---|---|---|---|
-| `tiny` | Low | Very fast | Quick testing |
-| `small` | Fair | Fast | Limited hardware |
-| `medium` | Good | Medium | **Best balance (CPU)** |
-| `large-v3` | Best | Slow | **Best quality (GPU)** |
+| Model      | PT-BR Quality | Speed     | Recommendation         |
+| ---------- | ------------- | --------- | ---------------------- |
+| `tiny`     | Low           | Very fast | Quick testing          |
+| `small`    | Fair          | Fast      | Limited hardware       |
+| `medium`   | Good          | Medium    | **Best balance (CPU)** |
+| `large-v3` | Best          | Slow      | **Best quality (GPU)** |
 
 ## Getting Started
 
@@ -146,17 +146,17 @@ python -m recorder.record --chunk-duration 30          # 30s chunks
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/meetings` | List all meetings |
-| `GET` | `/api/meetings/{id}` | Get meeting details (transcript + analysis) |
-| `POST` | `/api/meetings` | Create a new meeting |
-| `POST` | `/api/meetings/{id}/chunks` | Upload an audio chunk |
-| `GET` | `/api/meetings/{id}/chunks` | Get chunk status for a meeting |
-| `POST` | `/api/meetings/{id}/finalize` | Finalize and trigger analysis |
-| `DELETE` | `/api/meetings/{id}` | Delete a meeting |
-| `GET` | `/api/models/status` | Check Whisper & LLM model availability |
-| `GET` | `/health` | Health check |
+| Method   | Endpoint                      | Description                                 |
+| -------- | ----------------------------- | ------------------------------------------- |
+| `GET`    | `/api/meetings`               | List all meetings                           |
+| `GET`    | `/api/meetings/{id}`          | Get meeting details (transcript + analysis) |
+| `POST`   | `/api/meetings`               | Create a new meeting                        |
+| `POST`   | `/api/meetings/{id}/chunks`   | Upload an audio chunk                       |
+| `GET`    | `/api/meetings/{id}/chunks`   | Get chunk status for a meeting              |
+| `POST`   | `/api/meetings/{id}/finalize` | Finalize and trigger analysis               |
+| `DELETE` | `/api/meetings/{id}`          | Delete a meeting                            |
+| `GET`    | `/api/models/status`          | Check Whisper & LLM model availability      |
+| `GET`    | `/health`                     | Health check                                |
 
 ## Project Status
 

@@ -712,6 +712,83 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* --- Settings Page --- */
+.settings-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.settings-section h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.settings-select,
+.settings-input {
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.settings-select:focus,
+.settings-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.settings-select:hover,
+.settings-input:hover {
+  border-color: var(--border-light);
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.settings-saved {
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 500;
+}
+
+.settings-error {
+  font-size: 13px;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.settings-warning {
+  font-size: 13px;
+  color: var(--warning);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+}
+
 .models-dot {
   width: 8px;
   height: 8px;

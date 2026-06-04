@@ -40,6 +40,12 @@ builder.Services.AddCors(options =>
 // Meeting store (JSON files)
 builder.Services.AddSingleton<IMeetingStore, JsonMeetingStore>();
 
+// Runtime settings (mutable, user can change models from the UI)
+var dataDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "data");
+var settingsPath = Path.Combine(Path.GetFullPath(dataDir), "settings.json");
+var runtimeSettings = RuntimeSettings.Load(settingsPath, builder.Configuration);
+builder.Services.AddSingleton(runtimeSettings);
+
 // Meeting service (application layer)
 builder.Services.AddScoped<IMeetingService, MeetingService>();
 

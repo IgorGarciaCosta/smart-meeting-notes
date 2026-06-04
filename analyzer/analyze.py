@@ -84,40 +84,120 @@ def analyze_transcript(transcript: str, repo: str = DEFAULT_REPO, filename: str 
     return result
 
 
+def analyze_transcript_local(transcript: str, model_path: str) -> dict:
+    """Analyze using a local GGUF file path directly (no HuggingFace download)."""
+    t0 = time.time()
+
+    llm = Llama(
+        model_path=model_path,
+        n_ctx=8192,
+        n_threads=4,
+        verbose=False,
+    )
+
+    response = llm.create_chat_completion(
+        messages=[
+            {"role": "user", "content": ANALYSIS_PROMPT + transcript}
+        ],
+        temperature=0.3,
+        response_format={"type": "json_object"},
+    )
+
+    content = response["choices"][0]["message"]["content"]
+    elapsed = time.time() - t0
+
+    result = json.loads(content)
+    result.setdefault("summary", "")
+    result.setdefault("actionItems", [])
+    result.setdefault("decisions", [])
+    result.setdefault("pendingQuestions", [])
+    result["duration_seconds"] = round(elapsed, 1)
+
+    return result
+
+
+def analyze_transcript_openai(transcript: str, endpoint: str, model: str) -> dict:
+    """Analyze using an OpenAI-compatible endpoint (Ollama, LM Studio, etc.)."""
+    import urllib.request
+    import urllib.error
+
+    t0 = time.time()
+
+    url = f"{endpoint.rstrip('/')}/chat/completions"
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "user", "content": ANALYSIS_PROMPT + transcript}
+        ],
+        "temperature": 0.3,
+        "response_format": {"type": "json_object"},
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            response_data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Failed to reach endpoint {url}: {e}")
+
+    content = response_data["choices"][0]["message"]["content"]
+    elapsed = time.time() - t0
+
+    result = json.loads(content)
+    result.setdefault("summary", "")
+    result.setdefault("actionItems", [])
+    result.setdefault("decisions", [])
+    result.setdefault("pendingQuestions", [])
+    result["duration_seconds"] = round(elapsed, 1)
+
+    return result
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(
-            "Usage: python -m analyzer.analyze --json <transcript_file> [repo] [filename]", file=sys.stderr)
-        print(
-            "       python -m analyzer.analyze --json - [repo] [filename]  (read from stdin)", file=sys.stderr)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Analyze meeting transcripts with local LLMs")
+    parser.add_argument("--json", dest="json_mode", action="store_true", help="Output JSON")
+    parser.add_argument("source", nargs="?", help="Transcript file path or '-' for stdin")
+    parser.add_argument("repo", nargs="?", default=DEFAULT_REPO, help="HuggingFace repo ID")
+    parser.add_argument("filename", nargs="?", default=DEFAULT_FILE, help="GGUF filename in repo")
+    parser.add_argument("--local", dest="local_path", help="Path to a local GGUF model file")
+    parser.add_argument("--openai-endpoint", dest="openai_endpoint", help="OpenAI-compatible endpoint URL")
+    parser.add_argument("--openai-model", dest="openai_model", default="", help="Model name for OpenAI-compatible endpoint")
+
+    args = parser.parse_args()
+
+    if not args.json_mode:
+        parser.print_help()
         sys.exit(0)
 
-    if sys.argv[1] == "--json":
-        if len(sys.argv) < 3:
-            print(
-                "Error: --json requires <transcript_file> or '-' for stdin", file=sys.stderr)
-            sys.exit(1)
+    if not args.source:
+        print("Error: --json requires <transcript_file> or '-' for stdin", file=sys.stderr)
+        sys.exit(1)
 
-        source = sys.argv[2]
-        repo = sys.argv[3] if len(sys.argv) > 3 else DEFAULT_REPO
-        filename = sys.argv[4] if len(sys.argv) > 4 else DEFAULT_FILE
-
-        if source == "-":
-            transcript_text = sys.stdin.read()
-        else:
-            transcript_path = Path(source)
-            if not transcript_path.exists():
-                print(json.dumps(
-                    {"error": f"File not found: {source}"}), file=sys.stderr)
-                sys.exit(1)
-            transcript_text = transcript_path.read_text(encoding="utf-8")
-
-        try:
-            result = analyze_transcript(transcript_text, repo, filename)
-            print(json.dumps(result, ensure_ascii=False))
-        except Exception as e:
-            print(json.dumps({"error": str(e)}), file=sys.stderr)
-            sys.exit(1)
+    # Read transcript
+    if args.source == "-":
+        transcript_text = sys.stdin.read()
     else:
-        print("Unknown flag. Use --json", file=sys.stderr)
+        transcript_path = Path(args.source)
+        if not transcript_path.exists():
+            print(json.dumps({"error": f"File not found: {args.source}"}), file=sys.stderr)
+            sys.exit(1)
+        transcript_text = transcript_path.read_text(encoding="utf-8")
+
+    try:
+        if args.openai_endpoint:
+            result = analyze_transcript_openai(transcript_text, args.openai_endpoint, args.openai_model)
+        elif args.local_path:
+            result = analyze_transcript_local(transcript_text, args.local_path)
+        else:
+            result = analyze_transcript(transcript_text, args.repo, args.filename)
+        print(json.dumps(result, ensure_ascii=False))
+    except Exception as e:
+        print(json.dumps({"error": str(e)}), file=sys.stderr)
         sys.exit(1)

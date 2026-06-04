@@ -5,27 +5,26 @@ namespace SmartMeetingNotes.Api.Services;
 
 /// <summary>
 /// Calls the Whisper Python transcriber via subprocess.
-/// Runs: python -m transcriber.transcribe --json <audioFile>
+/// Reads model/device from RuntimeSettings so the user can switch models at runtime.
 /// </summary>
 public class WhisperService : IWhisperService
 {
     private readonly PythonProcessRunner _runner;
-    private readonly string _whisperModel;
-    private readonly string _whisperDevice;
+    private readonly RuntimeSettings _settings;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
-    public WhisperService(ILogger<WhisperService> logger, IConfiguration configuration)
+    public WhisperService(ILogger<WhisperService> logger, IConfiguration configuration, RuntimeSettings settings)
     {
+        _settings = settings;
+
         var projectRoot = configuration.GetValue<string>("Whisper:ProjectRoot")
             ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
         var pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
             ?? Path.Combine(projectRoot, "venv", "Scripts", "python.exe");
-        _whisperModel = configuration.GetValue<string>("Whisper:Model") ?? "distil-large-v3";
-        _whisperDevice = configuration.GetValue<string>("Whisper:Device") ?? "cpu";
 
         _runner = new PythonProcessRunner(pythonPath, projectRoot, logger);
     }
@@ -33,7 +32,7 @@ public class WhisperService : IWhisperService
     public async Task<TranscriptionResult> TranscribeAsync(string audioFilePath, CancellationToken cancellationToken = default)
     {
         var absoluteAudioPath = Path.GetFullPath(audioFilePath);
-        var arguments = $"-m transcriber.transcribe --json \"{absoluteAudioPath}\" {_whisperModel} {_whisperDevice}";
+        var arguments = $"-m transcriber.transcribe --json \"{absoluteAudioPath}\" {_settings.WhisperModel} {_settings.WhisperDevice}";
 
         var stdout = await _runner.RunAsync(arguments, "Whisper", cancellationToken);
 
