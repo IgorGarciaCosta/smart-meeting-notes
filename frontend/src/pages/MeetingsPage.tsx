@@ -29,6 +29,9 @@ export default function MeetingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deletingSelected, setDeletingSelected] = useState(false);
 
   useEffect(() => {
     getAllMeetings()
@@ -64,6 +67,30 @@ export default function MeetingsPage() {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selected.size === 0) return;
+    setDeletingSelected(true);
+    try {
+      await Promise.all([...selected].map((id) => deleteMeeting(id)));
+      setMeetings((prev) => prev.filter((m) => !selected.has(m.id)));
+      setSelected(new Set());
+      setSelectMode(false);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setDeletingSelected(false);
+    }
+  };
+
   if (loading) return <div className="loading">Loading meetings...</div>;
   if (error)
     return (
@@ -91,22 +118,54 @@ export default function MeetingsPage() {
             style={{
               display: "flex",
               justifyContent: "flex-end",
+              gap: 8,
               marginBottom: 12,
             }}
           >
-            <button
-              className="btn btn--danger"
-              style={{ padding: "8px 16px", fontSize: 13 }}
-              onClick={() => setShowDeleteAll(true)}
-            >
-              Delete All
-            </button>
+            {selectMode && (
+              <>
+                <button
+                  className="btn btn--danger"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={handleDeleteSelected}
+                  disabled={selected.size === 0 || deletingSelected}
+                >
+                  {deletingSelected ? "Deleting..." : `Delete (${selected.size})`}
+                </button>
+                <button
+                  className="btn btn--ghost"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => { setSelectMode(false); setSelected(new Set()); }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+            {!selectMode && (
+              <>
+                <button
+                  className="btn btn--ghost"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => setSelectMode(true)}
+                >
+                  Select
+                </button>
+                <button
+                  className="btn btn--danger"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => setShowDeleteAll(true)}
+                >
+                  Delete All
+                </button>
+              </>
+            )}
           </div>
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             <div className="table-wrapper">
               <table className="table">
                 <thead>
                   <tr>
+                    {selectMode && <th style={{ width: 32 }}></th>}
                     <th>Title</th>
                     <th>Status</th>
                     <th>Date</th>
@@ -116,6 +175,15 @@ export default function MeetingsPage() {
                 <tbody>
                   {meetings.map((m) => (
                     <tr key={m.id}>
+                      {selectMode && (
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selected.has(m.id)}
+                            onChange={() => toggleSelect(m.id)}
+                          />
+                        </td>
+                      )}
                       <td>
                         <Link to={`/meetings/${m.id}`} className="table-link">
                           {m.title}
