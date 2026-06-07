@@ -25,7 +25,9 @@ public class QwenAnalysisService : IAnalysisService
         _logger = logger;
 
         var projectRoot = configuration.GetValue<string>("Whisper:ProjectRoot")
-            ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+            ?? (OperatingSystem.IsWindows()
+                ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."))
+                : AppContext.BaseDirectory);
         var pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
             ?? (OperatingSystem.IsWindows()
                 ? Path.Combine(projectRoot, "venv", "Scripts", "python.exe")
