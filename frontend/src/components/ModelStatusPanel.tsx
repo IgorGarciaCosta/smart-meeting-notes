@@ -52,6 +52,12 @@ export default function ModelStatusPanel() {
     );
   }
 
+  const getDotClass = (m: ModelStatus) => {
+    if (m.available) return "models-dot--ok";
+    if (m.reason?.includes("primeiro uso")) return "models-dot--pending";
+    return "models-dot--error";
+  };
+
   return (
     <div className="card models-panel">
       <div className="models-panel-header">
@@ -62,14 +68,14 @@ export default function ModelStatusPanel() {
         {models.map((m) => (
           <div key={m.name} className="models-item">
             <span
-              className={`models-dot ${m.available ? "models-dot--ok" : "models-dot--error"}`}
+              className={`models-dot ${getDotClass(m)}`}
             />
             <div className="models-item-info">
               <span className="models-item-name">{m.name}</span>
               <span className="models-item-model">{m.model}</span>
             </div>
             {!m.available && (
-              <span className="models-item-warning">{m.reason}</span>
+              <span className={`models-item-warning ${m.reason?.includes("primeiro uso") ? "models-item-warning--pending" : ""}`}>{m.reason}</span>
             )}
           </div>
         ))}

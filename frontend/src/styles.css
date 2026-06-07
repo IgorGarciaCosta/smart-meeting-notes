@@ -804,6 +804,14 @@ body {
   background: var(--danger);
 }
 
+.models-dot--pending {
+  background: #f0a500;
+}
+
+.models-item-warning--pending {
+  color: #f0a500;
+}
+
 .models-item-info {
   display: flex;
   align-items: baseline;
