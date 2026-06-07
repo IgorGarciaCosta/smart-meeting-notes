@@ -17,9 +17,7 @@ export default function ModelStatusPanel() {
         <div className="models-panel-header">
           <span className="card-title">Services</span>
         </div>
-        <p className="models-error">
-          Unable to reach processing services.
-        </p>
+        <p className="models-error">Unable to reach processing services.</p>
       </div>
     );
   }
@@ -30,9 +28,7 @@ export default function ModelStatusPanel() {
         <div className="models-panel-header">
           <span className="card-title">Services</span>
         </div>
-        <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
-          Loading...
-        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12 }}>Loading...</p>
       </div>
     );
   }
@@ -67,15 +63,17 @@ export default function ModelStatusPanel() {
       <div className="models-list">
         {models.map((m) => (
           <div key={m.name} className="models-item">
-            <span
-              className={`models-dot ${getDotClass(m)}`}
-            />
+            <span className={`models-dot ${getDotClass(m)}`} />
             <div className="models-item-info">
               <span className="models-item-name">{m.name}</span>
               <span className="models-item-model">{m.model}</span>
             </div>
             {!m.available && (
-              <span className={`models-item-warning ${m.reason?.includes("primeiro uso") ? "models-item-warning--pending" : ""}`}>{m.reason}</span>
+              <span
+                className={`models-item-warning ${m.reason?.includes("primeiro uso") ? "models-item-warning--pending" : ""}`}
+              >
+                {m.reason}
+              </span>
             )}
           </div>
         ))}
