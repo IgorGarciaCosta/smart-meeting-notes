@@ -3,6 +3,10 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    outDir: "../src/SmartMeetingNotes.Api/wwwroot",
+    emptyOutDir: true,
+  },
   server: {
     proxy: {
       "/api": {

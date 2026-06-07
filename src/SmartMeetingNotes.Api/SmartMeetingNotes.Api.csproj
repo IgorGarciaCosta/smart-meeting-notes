@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>22fece45-9c0f-4733-8899-38a9a02a4c73</UserSecretsId>
+    <RootNamespace>SmartMeetingNotes.Api</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
