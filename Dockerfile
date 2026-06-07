@@ -26,6 +26,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY transcriber/ ./transcriber/
 COPY analyzer/ ./analyzer/
 COPY recorder/ ./recorder/
+COPY check_models.py .
 
 # Copy published .NET app
 COPY --from=build /app/publish .
