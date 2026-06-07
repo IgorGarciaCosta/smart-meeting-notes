@@ -11,20 +11,28 @@ public partial class App : Application
 {
     private CancellationTokenSource? _cts;
 
+    /// <summary>
+    /// The "app root" is the directory containing the exe.
+    /// All resources (appsettings.json, wwwroot/, scripts/, venv/, data/) are relative to it.
+    /// </summary>
+    private static string AppRoot => AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
         _cts = new CancellationTokenSource();
 
-        // Resolve the repo root (where venv/ lives) walking up from exe location
-        var repoRoot = FindRepoRoot();
-        Directory.SetCurrentDirectory(repoRoot);
-        Debug.WriteLine($"[Desktop] Repo root: {repoRoot}");
+        var appRoot = AppRoot;
+        Directory.SetCurrentDirectory(appRoot);
+        Debug.WriteLine($"[Desktop] App root: {appRoot}");
 
-        // Resolve the API project content root (where appsettings.json and wwwroot live)
-        var apiContentRoot = FindApiContentRoot();
-        Debug.WriteLine($"[Desktop] API content root: {apiContentRoot}");
+        // Ensure data directory exists
+        Directory.CreateDirectory(Path.Combine(appRoot, "data", "meetings"));
+        Directory.CreateDirectory(Path.Combine(appRoot, "data", "audio"));
+
+        // The content root for ASP.NET (where appsettings.json and wwwroot/ are)
+        var contentRoot = appRoot;
 
         // Start the embedded API on a fixed local port
         const string url = "http://localhost:5117";
@@ -35,7 +43,7 @@ public partial class App : Application
         {
             try
             {
-                var app = ApiHostBuilder.Create([], contentRoot: apiContentRoot);
+                var app = ApiHostBuilder.Create([], contentRoot: contentRoot);
                 app.Urls.Add(url);
                 token.Register(() => app.StopAsync());
                 await app.RunAsync();
@@ -68,52 +76,6 @@ public partial class App : Application
     {
         _cts?.Cancel();
         base.OnExit(e);
-    }
-
-    private static string FindRepoRoot()
-    {
-        // Walk up from exe location to find the repo root (contains venv/)
-        var dir = AppContext.BaseDirectory;
-        for (int i = 0; i < 10; i++)
-        {
-            if (Directory.Exists(Path.Combine(dir, "venv")))
-                return dir;
-            var parent = Path.GetDirectoryName(dir);
-            if (parent == null || parent == dir) break;
-            dir = parent;
-        }
-        // Also try from CWD
-        dir = Directory.GetCurrentDirectory();
-        for (int i = 0; i < 10; i++)
-        {
-            if (Directory.Exists(Path.Combine(dir, "venv")))
-                return dir;
-            var parent = Path.GetDirectoryName(dir);
-            if (parent == null || parent == dir) break;
-            dir = parent;
-        }
-        return AppContext.BaseDirectory;
-    }
-
-    private static string FindApiContentRoot()
-    {
-        // Walk up from exe location to find the API project folder
-        var dir = AppContext.BaseDirectory;
-        for (int i = 0; i < 10; i++)
-        {
-            var candidate = Path.Combine(dir, "src", "SmartMeetingNotes.Api");
-            if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, "appsettings.json")))
-                return candidate;
-            var parent = Path.GetDirectoryName(dir);
-            if (parent == null || parent == dir) break;
-            dir = parent;
-        }
-        // Fallback: use CWD (already set to repo root by this point)
-        var cwd = Directory.GetCurrentDirectory();
-        var fallback = Path.Combine(cwd, "src", "SmartMeetingNotes.Api");
-        if (Directory.Exists(fallback))
-            return fallback;
-        return cwd;
     }
 
     private static async Task<bool> WaitForApiReady(string url, CancellationToken ct)

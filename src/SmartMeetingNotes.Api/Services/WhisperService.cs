@@ -21,40 +21,43 @@ public class WhisperService : IWhisperService
     {
         _settings = settings;
 
-        var projectRoot = configuration.GetValue<string>("Whisper:ProjectRoot")
-            ?? ResolveProjectRoot();
-        var pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
-            ?? (OperatingSystem.IsWindows()
-                ? Path.Combine(projectRoot, "venv", "Scripts", "python.exe")
-                : "python3");
-
-        _runner = new PythonProcessRunner(pythonPath, projectRoot, logger);
+        var (pythonPath, scriptsRoot) = ResolvePythonPaths(configuration);
+        _runner = new PythonProcessRunner(pythonPath, scriptsRoot, logger);
     }
 
-    private static string ResolveProjectRoot()
+    internal static (string pythonPath, string scriptsRoot) ResolvePythonPaths(IConfiguration configuration)
     {
-        // Try walking up from CWD to find venv/
-        var dir = Directory.GetCurrentDirectory();
-        for (int i = 0; i < 8; i++)
+        var baseDir = Directory.GetCurrentDirectory();
+
+        // Scripts root: where transcriber/, analyzer/, check_models.py live
+        var scriptsRoot = configuration.GetValue<string>("Whisper:ProjectRoot") ?? "";
+        if (string.IsNullOrEmpty(scriptsRoot) || !Directory.Exists(scriptsRoot))
         {
-            if (Directory.Exists(Path.Combine(dir, "venv")))
-                return dir;
-            var parent = Path.GetDirectoryName(dir);
-            if (parent == null || parent == dir) break;
-            dir = parent;
+            // Published layout: scripts/ subfolder next to exe
+            var candidate = Path.Combine(baseDir, "scripts");
+            if (Directory.Exists(candidate))
+                scriptsRoot = candidate;
+            else
+                scriptsRoot = baseDir; // dev: CWD is repo root
         }
-        // Try walking up from BaseDirectory
-        dir = AppContext.BaseDirectory;
-        for (int i = 0; i < 8; i++)
+
+        // Python path
+        var pythonPath = configuration.GetValue<string>("Whisper:PythonPath") ?? "";
+        if (string.IsNullOrEmpty(pythonPath) || !File.Exists(pythonPath))
         {
-            if (Directory.Exists(Path.Combine(dir, "venv")))
-                return dir;
-            var parent = Path.GetDirectoryName(dir);
-            if (parent == null || parent == dir) break;
-            dir = parent;
+            if (OperatingSystem.IsWindows())
+            {
+                // Try venv next to exe (published) or in CWD (dev)
+                var venvPython = Path.Combine(baseDir, "venv", "Scripts", "python.exe");
+                pythonPath = File.Exists(venvPython) ? venvPython : "python";
+            }
+            else
+            {
+                pythonPath = "python3";
+            }
         }
-        // Fallback
-        return Directory.GetCurrentDirectory();
+
+        return (pythonPath, scriptsRoot);
     }
 
     public async Task<TranscriptionResult> TranscribeAsync(string audioFilePath, CancellationToken cancellationToken = default)

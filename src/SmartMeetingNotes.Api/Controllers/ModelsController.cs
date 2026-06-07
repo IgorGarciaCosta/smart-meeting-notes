@@ -16,14 +16,8 @@ public class ModelsController : ControllerBase
     {
         _settings = settings;
 
-        var projectRoot = configuration.GetValue<string>("Whisper:ProjectRoot")
-            ?? ResolveProjectRoot();
-        var pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
-            ?? (OperatingSystem.IsWindows()
-                ? Path.Combine(projectRoot, "venv", "Scripts", "python.exe")
-                : "python3");
-
-        _runner = new PythonProcessRunner(pythonPath, projectRoot, logger);
+        var (pythonPath, scriptsRoot) = WhisperService.ResolvePythonPaths(configuration);
+        _runner = new PythonProcessRunner(pythonPath, scriptsRoot, logger);
     }
 
     /// <summary>Check availability of currently configured models.</summary>
@@ -151,26 +145,4 @@ public class ModelsController : ControllerBase
         }
     }
 
-    private static string ResolveProjectRoot()
-    {
-        var dir = Directory.GetCurrentDirectory();
-        for (int i = 0; i < 8; i++)
-        {
-            if (Directory.Exists(Path.Combine(dir, "venv")))
-                return dir;
-            var parent = Path.GetDirectoryName(dir);
-            if (parent == null || parent == dir) break;
-            dir = parent;
-        }
-        dir = AppContext.BaseDirectory;
-        for (int i = 0; i < 8; i++)
-        {
-            if (Directory.Exists(Path.Combine(dir, "venv")))
-                return dir;
-            var parent = Path.GetDirectoryName(dir);
-            if (parent == null || parent == dir) break;
-            dir = parent;
-        }
-        return Directory.GetCurrentDirectory();
-    }
 }

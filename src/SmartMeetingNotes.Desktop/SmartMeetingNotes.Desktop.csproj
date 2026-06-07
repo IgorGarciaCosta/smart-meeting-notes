@@ -34,4 +34,33 @@
     <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\frontend" />
   </Target>
 
+  <!-- Copy all portable resources to publish output -->
+  <Target Name="CopyPortableResources" AfterTargets="Publish">
+    <!-- Copy wwwroot (frontend build) -->
+    <ItemGroup>
+      <WwwrootFiles Include="$(MSBuildThisFileDirectory)..\SmartMeetingNotes.Api\wwwroot\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WwwrootFiles)" DestinationFolder="$(PublishDir)wwwroot\%(RecursiveDir)" />
+
+    <!-- Copy appsettings.json -->
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\SmartMeetingNotes.Api\appsettings.json" DestinationFolder="$(PublishDir)" />
+
+    <!-- Copy Python scripts -->
+    <ItemGroup>
+      <TranscriberFiles Include="$(MSBuildThisFileDirectory)..\..\transcriber\**\*" />
+      <AnalyzerFiles Include="$(MSBuildThisFileDirectory)..\..\analyzer\**\*" />
+      <RecorderFiles Include="$(MSBuildThisFileDirectory)..\..\recorder\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(TranscriberFiles)" DestinationFolder="$(PublishDir)scripts\transcriber\%(RecursiveDir)" />
+    <Copy SourceFiles="@(AnalyzerFiles)" DestinationFolder="$(PublishDir)scripts\analyzer\%(RecursiveDir)" />
+    <Copy SourceFiles="@(RecorderFiles)" DestinationFolder="$(PublishDir)scripts\recorder\%(RecursiveDir)" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\check_models.py" DestinationFolder="$(PublishDir)scripts\" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\scan_local_models.py" DestinationFolder="$(PublishDir)scripts\" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\requirements.txt" DestinationFolder="$(PublishDir)" />
+
+    <!-- Create data directories -->
+    <MakeDir Directories="$(PublishDir)data\meetings" />
+    <MakeDir Directories="$(PublishDir)data\audio" />
+  </Target>
+
 </Project>
