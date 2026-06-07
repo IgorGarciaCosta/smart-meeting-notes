@@ -6,10 +6,6 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Use PORT env var (Render sets this)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-builder.WebHost.UseUrls($"http://+:{port}");
-
 // Configure Kestrel max request body size (200 MB default)
 builder.WebHost.ConfigureKestrel(options =>
 {
