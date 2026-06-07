@@ -44,6 +44,7 @@ public class ChunkProcessingService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var store = scope.ServiceProvider.GetRequiredService<IMeetingStore>();
         var whisper = scope.ServiceProvider.GetRequiredService<IWhisperService>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
         var meeting = await store.GetAsync(meetingId);
         if (meeting == null)
@@ -69,6 +70,16 @@ public class ChunkProcessingService : BackgroundService
             var transcription = await whisper.TranscribeAsync(chunk.FilePath);
             chunk.Transcript = transcription;
             chunk.Status = ChunkStatus.Transcribed;
+
+            // Cleanup audio file after successful transcription if configured
+            var cleanup = configuration.GetValue<bool>("Upload:CleanupAudioAfterTranscription");
+            if (cleanup && !string.IsNullOrEmpty(chunk.FilePath) && File.Exists(chunk.FilePath))
+            {
+                File.Delete(chunk.FilePath);
+                _logger.LogInformation("[{MeetingId}] Chunk {ChunkIndex} audio file deleted", meetingId, chunkIndex);
+                chunk.FilePath = string.Empty;
+            }
+
             await store.SaveAsync(meeting);
 
             _logger.LogInformation("[{MeetingId}] Chunk {ChunkIndex} transcribed ({Chars} chars)",
