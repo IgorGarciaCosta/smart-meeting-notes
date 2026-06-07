@@ -8,6 +8,13 @@
     <Nullable>enable</Nullable>
     <RootNamespace>SmartMeetingNotes.Desktop</RootNamespace>
     <AssemblyName>SmartMeetingNotes</AssemblyName>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!-- Publish settings (only apply during dotnet publish) -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,5 +28,10 @@
   <ItemGroup>
     <ProjectReference Include="..\SmartMeetingNotes.Api\SmartMeetingNotes.Api.csproj" />
   </ItemGroup>
+
+  <!-- Auto-build frontend before publish -->
+  <Target Name="BuildFrontend" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\frontend" />
+  </Target>
 
 </Project>

@@ -39,3 +39,5 @@ appsettings.Development.json
 
 # Data (meetings JSON + uploaded audio)
 data/
+
+publish/

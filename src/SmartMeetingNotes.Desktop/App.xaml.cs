@@ -17,12 +17,14 @@ public partial class App : Application
 
         _cts = new CancellationTokenSource();
 
+        // Resolve the repo root (where venv/ lives) walking up from exe location
+        var repoRoot = FindRepoRoot();
+        Directory.SetCurrentDirectory(repoRoot);
+        Debug.WriteLine($"[Desktop] Repo root: {repoRoot}");
+
         // Resolve the API project content root (where appsettings.json and wwwroot live)
         var apiContentRoot = FindApiContentRoot();
         Debug.WriteLine($"[Desktop] API content root: {apiContentRoot}");
-
-        // Set the current directory to the API root so relative paths (data/) work
-        Directory.SetCurrentDirectory(apiContentRoot);
 
         // Start the embedded API on a fixed local port
         const string url = "http://localhost:5117";
@@ -68,9 +70,34 @@ public partial class App : Application
         base.OnExit(e);
     }
 
+    private static string FindRepoRoot()
+    {
+        // Walk up from exe location to find the repo root (contains venv/)
+        var dir = AppContext.BaseDirectory;
+        for (int i = 0; i < 10; i++)
+        {
+            if (Directory.Exists(Path.Combine(dir, "venv")))
+                return dir;
+            var parent = Path.GetDirectoryName(dir);
+            if (parent == null || parent == dir) break;
+            dir = parent;
+        }
+        // Also try from CWD
+        dir = Directory.GetCurrentDirectory();
+        for (int i = 0; i < 10; i++)
+        {
+            if (Directory.Exists(Path.Combine(dir, "venv")))
+                return dir;
+            var parent = Path.GetDirectoryName(dir);
+            if (parent == null || parent == dir) break;
+            dir = parent;
+        }
+        return AppContext.BaseDirectory;
+    }
+
     private static string FindApiContentRoot()
     {
-        // Walk up from the executable to find the API project folder
+        // Walk up from exe location to find the API project folder
         var dir = AppContext.BaseDirectory;
         for (int i = 0; i < 10; i++)
         {
@@ -81,7 +108,7 @@ public partial class App : Application
             if (parent == null || parent == dir) break;
             dir = parent;
         }
-        // Fallback: use CWD-based path
+        // Fallback: use CWD (already set to repo root by this point)
         var cwd = Directory.GetCurrentDirectory();
         var fallback = Path.Combine(cwd, "src", "SmartMeetingNotes.Api");
         if (Directory.Exists(fallback))

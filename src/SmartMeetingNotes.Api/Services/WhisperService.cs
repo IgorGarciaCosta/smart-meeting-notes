@@ -22,15 +22,39 @@ public class WhisperService : IWhisperService
         _settings = settings;
 
         var projectRoot = configuration.GetValue<string>("Whisper:ProjectRoot")
-            ?? (OperatingSystem.IsWindows()
-                ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."))
-                : AppContext.BaseDirectory);
+            ?? ResolveProjectRoot();
         var pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
             ?? (OperatingSystem.IsWindows()
                 ? Path.Combine(projectRoot, "venv", "Scripts", "python.exe")
                 : "python3");
 
         _runner = new PythonProcessRunner(pythonPath, projectRoot, logger);
+    }
+
+    private static string ResolveProjectRoot()
+    {
+        // Try walking up from CWD to find venv/
+        var dir = Directory.GetCurrentDirectory();
+        for (int i = 0; i < 8; i++)
+        {
+            if (Directory.Exists(Path.Combine(dir, "venv")))
+                return dir;
+            var parent = Path.GetDirectoryName(dir);
+            if (parent == null || parent == dir) break;
+            dir = parent;
+        }
+        // Try walking up from BaseDirectory
+        dir = AppContext.BaseDirectory;
+        for (int i = 0; i < 8; i++)
+        {
+            if (Directory.Exists(Path.Combine(dir, "venv")))
+                return dir;
+            var parent = Path.GetDirectoryName(dir);
+            if (parent == null || parent == dir) break;
+            dir = parent;
+        }
+        // Fallback
+        return Directory.GetCurrentDirectory();
     }
 
     public async Task<TranscriptionResult> TranscribeAsync(string audioFilePath, CancellationToken cancellationToken = default)

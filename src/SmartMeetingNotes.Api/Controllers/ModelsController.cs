@@ -17,9 +17,7 @@ public class ModelsController : ControllerBase
         _settings = settings;
 
         var projectRoot = configuration.GetValue<string>("Whisper:ProjectRoot")
-            ?? (OperatingSystem.IsWindows()
-                ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."))
-                : AppContext.BaseDirectory);
+            ?? ResolveProjectRoot();
         var pythonPath = configuration.GetValue<string>("Whisper:PythonPath")
             ?? (OperatingSystem.IsWindows()
                 ? Path.Combine(projectRoot, "venv", "Scripts", "python.exe")
@@ -151,5 +149,28 @@ public class ModelsController : ControllerBase
         {
             return Ok(new { available = false, models = Array.Empty<object>(), reason = "Ollama not running on localhost:11434" });
         }
+    }
+
+    private static string ResolveProjectRoot()
+    {
+        var dir = Directory.GetCurrentDirectory();
+        for (int i = 0; i < 8; i++)
+        {
+            if (Directory.Exists(Path.Combine(dir, "venv")))
+                return dir;
+            var parent = Path.GetDirectoryName(dir);
+            if (parent == null || parent == dir) break;
+            dir = parent;
+        }
+        dir = AppContext.BaseDirectory;
+        for (int i = 0; i < 8; i++)
+        {
+            if (Directory.Exists(Path.Combine(dir, "venv")))
+                return dir;
+            var parent = Path.GetDirectoryName(dir);
+            if (parent == null || parent == dir) break;
+            dir = parent;
+        }
+        return Directory.GetCurrentDirectory();
     }
 }
