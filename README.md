@@ -1,40 +1,45 @@
 # Smart Meeting Notes
 
-AI-powered meeting assistant that captures audio from microphone or system audio (WASAPI loopback), automatically transcribes it using Faster Whisper, and generates technical summaries, action items, decisions, and pending questions — all running **100% locally and offline**.
+AI-powered meeting assistant that captures audio from microphone or system audio (WASAPI loopback), automatically transcribes it using Faster Whisper, and generates technical summaries, action items, decisions, and pending questions — all running **100% locally and offline** as a **Windows desktop application**.
 
 > "o problema era race condition no cache" → gera uma issue técnica decente automaticamente.
 
 ## Features
 
+- **Windows Desktop App** — Native window (WPF + WebView2) with embedded API server, no browser needed
 - **Audio Capture** — Records from microphone, system audio (WASAPI loopback), or both mixed simultaneously
-- **Chunked Streaming** — Audio is split into configurable chunks and sent to the API in real-time
+- **Chunked Streaming** — Audio is split into configurable chunks and processed in real-time
 - **Speech-to-Text** — Local transcription via [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) (free, fully offline)
 - **AI Analysis** — Processes transcripts with a local LLM to extract:
   - Technical meeting summary
   - Action items with responsible people
   - Key decisions made
   - Pending questions / follow-ups
-- **Swappable Models** — Change Whisper and LLM models from the web UI at runtime. Supports:
+- **Swappable Models** — Change Whisper and LLM models from the UI at runtime. Supports:
   - Built-in GGUF models (via llama-cpp-python)
   - Ollama (auto-detects installed models)
   - Any OpenAI-compatible endpoint (LM Studio, vLLM, LocalAI, etc.)
-- **Web Dashboard** — React SPA to record meetings, browse history, view analysis, and configure models
+- **Auto Cleanup** — Audio files are automatically deleted after successful transcription (configurable)
 - **Fully Offline** — No external API calls; all processing happens on your machine
 
 ## Architecture
 
 ```
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│  Python Recorder │────▶│  ASP.NET Core    │────▶│  Faster Whisper  │────▶│  Qwen LLM        │
-│  (mic/loopback/  │     │  Web API         │     │  (transcribe.py) │     │  (analyze.py)    │
-│   mixed audio)   │     │  (.NET 9)        │     │                  │     │                  │
-└──────────────────┘     └────────┬─────────┘     └──────────────────┘     └──────────────────┘
-                                  │
-                         ┌────────▼─────────┐
-                         │  React Frontend  │
-                         │  (Vite + TS)     │
-                         │  Record / Browse │
-                         └──────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  SmartMeetingNotes.Desktop (WPF + WebView2)                                  │
+│                                                                              │
+│  ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     │
+│  │  ASP.NET Core    │────▶│  Faster Whisper  │────▶│  Qwen LLM        │     │
+│  │  Web API         │     │  (transcribe.py) │     │  (analyze.py)    │     │
+│  │  (.NET 9)        │     │                  │     │                  │     │
+│  └────────┬─────────┘     └──────────────────┘     └──────────────────┘     │
+│           │                                                                  │
+│  ┌────────▼─────────┐                                                        │
+│  │  React Frontend  │                                                        │
+│  │  (WebView2)      │                                                        │
+│  │  Record / Browse │                                                        │
+│  └──────────────────┘                                                        │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### How It Works
@@ -48,36 +53,39 @@ AI-powered meeting assistant that captures audio from microphone or system audio
 
 | Component      | Technology                                                            |
 | -------------- | --------------------------------------------------------------------- |
-| Backend API    | ASP.NET Core (.NET 9, C#)                                             |
+| Desktop Shell  | WPF + WebView2 (.NET 9)                                               |
+| Backend API    | ASP.NET Core (.NET 9, C#) — self-hosted via Kestrel                   |
 | Transcription  | Faster Whisper (Python subprocess)                                    |
 | AI Analysis    | Any local LLM — GGUF (llama-cpp-python), Ollama, or OpenAI-compatible |
 | Audio Recorder | Python (sounddevice, WASAPI loopback)                                 |
-| Frontend       | React 19 + TypeScript + Vite                                          |
-| Storage        | JSON files (file-based store)                                         |
-| API Docs       | Swagger / OpenAPI                                                     |
+| Frontend       | React 19 + TypeScript + Vite (served as static files)                 |
+| Storage        | JSON files (file-based store, audio auto-cleaned after transcription) |
+| API Docs       | Swagger / OpenAPI (dev mode)                                          |
 
 ## Project Structure
 
 ```
 smart-meeting-notes/
-├── src/SmartMeetingNotes.Api/   # ASP.NET Core Web API
-│   ├── Controllers/             # REST endpoints (Meetings, Models)
-│   ├── Models/                  # DTOs and domain models
-│   ├── Services/                # Business logic, processing queues
-│   ├── Middleware/              # Request logging
-│   └── data/                    # JSON meeting store + audio files
-├── frontend/                    # React SPA (Vite)
+├── src/SmartMeetingNotes.Desktop/  # WPF Desktop App (WebView2 shell)
+├── src/SmartMeetingNotes.Api/      # ASP.NET Core Web API (embedded)
+│   ├── Controllers/                # REST endpoints (Meetings, Models)
+│   ├── Models/                     # DTOs and domain models
+│   ├── Services/                   # Business logic, processing queues
+│   ├── Middleware/                 # Request logging
+│   ├── wwwroot/                    # Built React frontend (served as static files)
+│   └── data/                       # JSON meeting store
+├── frontend/                       # React SPA source (Vite)
 │   └── src/
-│       ├── pages/               # RecordPage, MeetingsPage, MeetingDetailPage
-│       ├── components/          # ModelStatusPanel
-│       ├── api/                 # API client + types
-│       └── hooks/               # useAudioRecorder
-├── recorder/                    # Python CLI audio recorder
-│   ├── record.py                # Main CLI entry point
-│   ├── capture.py               # Audio capture logic
-│   ├── devices.py               # Device enumeration
-│   └── api_client.py            # HTTP client for the API
-├── transcriber/                 # Faster Whisper transcription module
+│       ├── pages/                  # RecordPage, MeetingsPage, MeetingDetailPage
+│       ├── components/             # ModelStatusPanel
+│       ├── api/                    # API client + types
+│       └── hooks/                  # useAudioRecorder
+├── recorder/                       # Python CLI audio recorder
+│   ├── record.py                   # Main CLI entry point
+│   ├── capture.py                  # Audio capture logic
+│   ├── devices.py                  # Device enumeration
+│   └── api_client.py              # HTTP client for the API
+├── transcriber/                    # Faster Whisper transcription module
 │   └── transcribe.py
 ├── analyzer/                    # Qwen LLM analysis module
 │   └── analyze.py
@@ -99,10 +107,11 @@ The project uses [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) for
 
 ### Prerequisites
 
+- Windows 10/11
 - .NET 9 SDK
 - Python 3.9+
-- Node.js 18+
-- GPU with CUDA (optional, recommended for `large-v3`)
+- Node.js 18+ (for frontend development only)
+- GPU with CUDA (optional, recommended for `large-v3` and faster LLM inference)
 
 ### 1. Clone the repository
 
@@ -115,13 +124,20 @@ cd smart-meeting-notes
 
 ```bash
 python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Linux/macOS
+venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
 
-### 3. Run the API
+### 3. Run the Desktop App
+
+```bash
+dotnet run --project src/SmartMeetingNotes.Desktop
+```
+
+This opens the desktop window with the full application running locally.
+
+### Alternative: Run API standalone (development)
 
 ```bash
 cd src/SmartMeetingNotes.Api
@@ -130,7 +146,7 @@ dotnet run
 
 The API will be available at `http://localhost:5117` with Swagger UI at `/swagger`.
 
-### 4. Run the Frontend
+### Frontend development
 
 ```bash
 cd frontend
@@ -138,9 +154,16 @@ npm install
 npm run dev
 ```
 
-The web app opens at `http://localhost:5173`.
+The dev server runs at `http://localhost:5173` and proxies API calls to `:5117`.
 
-### 5. Record a meeting (CLI)
+To rebuild the frontend into the API's `wwwroot/`:
+
+```bash
+cd frontend
+npm run build
+```
+
+### Record via CLI (optional)
 
 ```bash
 python -m recorder.record --title "Daily Standup"
@@ -181,11 +204,14 @@ python -m recorder.record --chunk-duration 30          # 30s chunks
 - [x] Model status dashboard (Whisper + LLM availability check)
 - [x] Runtime model switching from web UI (Whisper + LLM)
 - [x] Multi-provider support (GGUF, Ollama, OpenAI-compatible)
+- [x] Windows desktop app (WPF + WebView2)
+- [x] Auto-cleanup of audio files after transcription
 - [ ] Speaker diarization (who said what)
 - [ ] Real-time transcript streaming via WebSocket
 - [ ] Export to Markdown / PDF
 - [ ] Jira / GitHub Issues integration
 - [ ] Multi-language UI
+- [ ] Windows installer (MSIX / Inno Setup)
 
 ## License
 
